@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/constants/app_constants.dart';
 import 'scan_screen.dart';
 import 'area_scan_screen.dart';
 import 'history_screen.dart';
@@ -12,14 +13,14 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: Colors.grey[100],
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(UIConstants.paddingXLarge),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildHeader(),
-              const SizedBox(height: 32),
+              const SizedBox(height: UIConstants.paddingXLarge),
               _buildMainActions(context),
-              const SizedBox(height: 24),
+              const SizedBox(height: UIConstants.paddingLarge),
               _buildSecondaryActions(context),
               const Spacer(),
               _buildFooter(),
@@ -37,16 +38,16 @@ class HomeScreen extends StatelessWidget {
         const Text(
           'GuaverRoots',
           style: TextStyle(
-            fontSize: 32,
+            fontSize: UIConstants.fontSizeXXXLarge,
             fontWeight: FontWeight.bold,
             color: Colors.green,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: UIConstants.spacingSmall),
         Text(
           'Crop Health Assistant',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: UIConstants.fontSizeXLarge,
             color: Colors.grey[600],
           ),
         ),
@@ -70,7 +71,7 @@ class HomeScreen extends StatelessWidget {
             );
           },
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: UIConstants.paddingMedium),
         _buildBigButton(
           context,
           icon: Icons.grid_on,
@@ -116,20 +117,20 @@ class HomeScreen extends StatelessWidget {
       elevation: 4,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(UIConstants.paddingMedium),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(UIConstants.paddingMedium),
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
                 ),
-                child: Icon(icon, size: 32, color: Colors.white),
+                child: Icon(icon, size: UIConstants.iconLarge, color: Colors.white),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: UIConstants.paddingMedium),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,15 +138,15 @@ class HomeScreen extends StatelessWidget {
                     Text(
                       label,
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: UIConstants.fontSizeXLarge,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: UIConstants.spacingSmall),
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: UIConstants.fontSizeMedium,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -164,12 +165,12 @@ class HomeScreen extends StatelessWidget {
     return Column(
       children: [
         const Divider(),
-        const SizedBox(height: 12),
+        const SizedBox(height: UIConstants.paddingMedium),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.wifi_off, size: 16, color: Colors.grey[600]),
-            const SizedBox(width: 8),
+            Icon(Icons.wifi_off, size: UIConstants.iconSmall, color: Colors.grey[600]),
+            const SizedBox(width: UIConstants.spacingSmall),
             Text(
               'Works Offline',
               style: TextStyle(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import '../models/scan_result.dart';
+import '../core/constants/app_constants.dart';
 
 class HeatmapScreen extends StatelessWidget {
   final ScanResult scanResult;
@@ -17,14 +18,14 @@ class HeatmapScreen extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLegend(),
-            const SizedBox(height: 16),
+            const SizedBox(height: UIConstants.paddingMedium),
             _buildHeatmapGrid(),
-            const SizedBox(height: 24),
+            const SizedBox(height: UIConstants.paddingLarge),
             _buildSummaryCard(),
           ],
         ),
@@ -36,18 +37,18 @@ class HeatmapScreen extends StatelessWidget {
     return Card(
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Health Legend',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: UIConstants.paddingMedium),
             _buildLegendItem('Healthy', Colors.green),
             _buildLegendItem('Needs Monitoring', Colors.yellow),
             _buildLegendItem('High Risk', Colors.red),
@@ -63,8 +64,8 @@ class HeatmapScreen extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 24,
-            height: 24,
+            width: UIConstants.iconMedium,
+            height: UIConstants.iconMedium,
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(4),
@@ -73,7 +74,7 @@ class HeatmapScreen extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             label,
-            style: const TextStyle(fontSize: 14),
+            style: const TextStyle(fontSize: UIConstants.fontSizeMedium),
           ),
         ],
       ),
@@ -86,25 +87,25 @@ class HeatmapScreen extends StatelessWidget {
     return Card(
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Farm Area Overview',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: UIConstants.paddingMedium),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
+                crossAxisCount: UIConstants.gridCrossAxisCount,
+                crossAxisSpacing: UIConstants.gridCrossAxisSpacing,
+                mainAxisSpacing: UIConstants.gridMainAxisSpacing,
               ),
               itemCount: images.length,
               itemBuilder: (context, index) {
@@ -112,7 +113,7 @@ class HeatmapScreen extends StatelessWidget {
                 return Stack(
                   children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
                       child: Image.file(
                         File(images[index]),
                         fit: BoxFit.cover,
@@ -123,7 +124,7 @@ class HeatmapScreen extends StatelessWidget {
                     Positioned.fill(
                       child: Container(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
                           border: Border.all(
                             color: healthStatus.color,
                             width: 3,
@@ -136,18 +137,18 @@ class HeatmapScreen extends StatelessWidget {
                       left: 4,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: UIConstants.paddingSmall,
+                          vertical: UIConstants.paddingSmall,
                         ),
                         decoration: BoxDecoration(
-                          color: healthStatus.color.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(4),
+                          color: healthStatus.color.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
                         ),
                         child: Text(
                           healthStatus.label,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: UIConstants.fontSizeSmall,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -171,33 +172,37 @@ class HeatmapScreen extends StatelessWidget {
 
     for (int i = 0; i < images.length; i++) {
       final status = _getHealthStatus(i);
-      if (status.label == 'Healthy') healthy++;
-      else if (status.label == 'Monitor') monitoring++;
-      else highRisk++;
+      if (status.label == 'Healthy') {
+        healthy++;
+      } else if (status.label == 'Monitor') {
+        monitoring++;
+      } else {
+        highRisk++;
+      }
     }
 
     return Card(
       elevation: 4,
       color: Colors.blue[50],
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Area Summary',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: UIConstants.paddingMedium),
             _buildSummaryItem('Healthy Areas', healthy, Colors.green),
             _buildSummaryItem('Needs Monitoring', monitoring, Colors.yellow),
             _buildSummaryItem('High Risk Areas', highRisk, Colors.red),
-            const SizedBox(height: 12),
+            const SizedBox(height: UIConstants.paddingMedium),
             const Divider(),
-            const SizedBox(height: 12),
+            const SizedBox(height: UIConstants.paddingMedium),
             Text(
               'Total Scanned: ${images.length} locations',
               style: const TextStyle(

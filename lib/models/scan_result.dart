@@ -36,6 +36,9 @@ class ScanResult extends HiveObject {
   
   @HiveField(10)
   final String? notes;
+  
+  @HiveField(11)
+  final String? description;
 
   ScanResult({
     required this.id,
@@ -49,6 +52,7 @@ class ScanResult extends HiveObject {
     this.isAreaScan = false,
     this.areaScanImages,
     this.notes,
+    this.description,
   });
 
   ScanResult copyWith({
@@ -63,6 +67,7 @@ class ScanResult extends HiveObject {
     bool? isAreaScan,
     List<String>? areaScanImages,
     String? notes,
+    String? description,
   }) {
     return ScanResult(
       id: id ?? this.id,
@@ -76,6 +81,7 @@ class ScanResult extends HiveObject {
       isAreaScan: isAreaScan ?? this.isAreaScan,
       areaScanImages: areaScanImages ?? this.areaScanImages,
       notes: notes ?? this.notes,
+      description: description ?? this.description,
     );
   }
 
@@ -94,6 +100,7 @@ class ScanResult extends HiveObject {
           ? List<String>.from(json['area_scan_images']) 
           : null,
       notes: json['notes'],
+      description: json['description'],
     );
   }
 
@@ -110,6 +117,7 @@ class ScanResult extends HiveObject {
       'is_area_scan': isAreaScan,
       'area_scan_images': areaScanImages,
       'notes': notes,
+      'description': description,
     };
   }
 }

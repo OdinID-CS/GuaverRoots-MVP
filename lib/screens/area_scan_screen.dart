@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
-import '../models/scan_result.dart';
+import '../core/constants/app_constants.dart';
+import '../core/logging/app_logger.dart';
+import '../utils/image_compressor.dart';
 import 'treatment_screen.dart';
 
 class AreaScanScreen extends StatefulWidget {
@@ -19,27 +20,36 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
   final List<String> _capturedImages = [];
   final ImagePicker _picker = ImagePicker();
   bool _isAnalyzing = false;
-  static const int _maxPhotos = 9;
 
   Future<void> _capturePhoto() async {
-    if (_capturedImages.length >= _maxPhotos) return;
+    if (_capturedImages.length >= AppConstants.maxAreaPhotos) return;
 
-    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-    if (image != null) {
-      setState(() {
-        _capturedImages.add(image.path);
-      });
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+      if (image != null) {
+        setState(() {
+          _capturedImages.add(image.path);
+        });
+        AppLogger.camera('Photo captured for area scan', success: true, details: 'Total: ${_capturedImages.length}');
+      }
+    } catch (e) {
+      AppLogger.camera('Photo capture for area scan', success: false, details: e.toString());
     }
   }
 
   Future<void> _pickFromGallery() async {
-    if (_capturedImages.length >= _maxPhotos) return;
+    if (_capturedImages.length >= AppConstants.maxAreaPhotos) return;
 
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() {
-        _capturedImages.add(image.path);
-      });
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        setState(() {
+          _capturedImages.add(image.path);
+        });
+        AppLogger.camera('Image selected from gallery for area scan', success: true, details: 'Total: ${_capturedImages.length}');
+      }
+    } catch (e) {
+      AppLogger.camera('Gallery selection for area scan', success: false, details: e.toString());
     }
   }
 
@@ -53,25 +63,38 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
     if (_capturedImages.isEmpty) return;
 
     setState(() => _isAnalyzing = true);
+    AppLogger.info('Starting area scan analysis with ${_capturedImages.length} images');
 
-    final apiService = Provider.of<ApiService>(context, listen: false);
-    final result = await apiService.analyzeAreaScan(_capturedImages);
-
-    if (result != null && mounted) {
-      await StorageService.saveScanResult(result);
+    try {
+      // Compress all images before analysis
+      final compressedImages = await ImageCompressor.compressImages(_capturedImages);
+      AppLogger.info('Compressed ${compressedImages.length} images for area scan');
       
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TreatmentScreen(scanResult: result),
-          ),
-        );
-      }
-    }
+      if (!mounted) return;
+      
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      final result = await apiService.analyzeAreaScan(compressedImages);
 
-    if (mounted) {
-      setState(() => _isAnalyzing = false);
+      if (result != null && mounted) {
+        await StorageService.saveScanResult(result);
+        
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TreatmentScreen(scanResult: result),
+            ),
+          );
+        }
+      } else if (mounted) {
+        AppLogger.warning('Area scan analysis returned null result');
+      }
+    } catch (e) {
+      AppLogger.error('Area scan analysis failed', error: e);
+    } finally {
+      if (mounted) {
+        setState(() => _isAnalyzing = false);
+      }
     }
   }
 
@@ -132,9 +155,9 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Tap + to add photos (max $_maxPhotos)',
+                                'Tap + to add photos (max ${AppConstants.maxAreaPhotos})',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: UIConstants.fontSizeMedium,
                                   color: Colors.grey[500],
                                 ),
                               ),
@@ -142,25 +165,25 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                           ),
                         )
                       : GridView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(UIConstants.paddingMedium),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
+                            crossAxisCount: UIConstants.gridCrossAxisCount,
+                            crossAxisSpacing: UIConstants.gridCrossAxisSpacing,
+                            mainAxisSpacing: UIConstants.gridMainAxisSpacing,
                           ),
                           itemCount: _capturedImages.length +
-                              (_capturedImages.length < _maxPhotos ? 1 : 0),
+                              (_capturedImages.length < AppConstants.maxAreaPhotos ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (index == _capturedImages.length) {
                               return GestureDetector(
-                                onTap: _capturedImages.length < _maxPhotos
+                                onTap: _capturedImages.length < AppConstants.maxAreaPhotos
                                     ? _showPhotoOptions
                                     : null,
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
                                     border: Border.all(
                                       color: Colors.grey[400]!,
                                       width: 2,
@@ -168,7 +191,7 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                                   ),
                                   child: Icon(
                                     Icons.add,
-                                    size: 40,
+                                    size: UIConstants.iconLarge,
                                     color: Colors.grey[600],
                                   ),
                                 ),
@@ -178,7 +201,7 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                             return Stack(
                               children: [
                                 ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
                                   child: Image.file(
                                     File(_capturedImages[index]),
                                     fit: BoxFit.cover,
@@ -192,7 +215,7 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                                   child: GestureDetector(
                                     onTap: () => _removePhoto(index),
                                     child: Container(
-                                      padding: const EdgeInsets.all(4),
+                                      padding: const EdgeInsets.all(UIConstants.paddingSmall),
                                       decoration: const BoxDecoration(
                                         color: Colors.red,
                                         shape: BoxShape.circle,
@@ -200,7 +223,7 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                                       child: const Icon(
                                         Icons.close,
                                         color: Colors.white,
-                                        size: 16,
+                                        size: UIConstants.iconSmall,
                                       ),
                                     ),
                                   ),
@@ -210,16 +233,16 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                                   left: 4,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
+                                        horizontal: UIConstants.paddingSmall, vertical: UIConstants.paddingSmall),
                                     decoration: BoxDecoration(
                                       color: Colors.black54,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
                                     ),
                                     child: Text(
                                       '${index + 1}',
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 12,
+                                        fontSize: UIConstants.fontSizeSmall,
                                       ),
                                     ),
                                   ),
@@ -230,13 +253,13 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                         ),
                 ),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(UIConstants.paddingMedium),
                   color: Colors.white,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       ElevatedButton.icon(
-                        onPressed: _capturedImages.length < _maxPhotos
+                        onPressed: _capturedImages.length < AppConstants.maxAreaPhotos
                             ? _showPhotoOptions
                             : null,
                         icon: const Icon(Icons.add_a_photo),
@@ -244,8 +267,8 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
-                          minimumSize: const Size(140, 50),
-                          textStyle: const TextStyle(fontSize: 16),
+                          minimumSize: const Size(UIConstants.buttonMinWidth, UIConstants.buttonHeight),
+                          textStyle: const TextStyle(fontSize: UIConstants.fontSizeLarge),
                         ),
                       ),
                       if (_capturedImages.isNotEmpty)
@@ -256,8 +279,8 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
                             foregroundColor: Colors.white,
-                            minimumSize: const Size(140, 50),
-                            textStyle: const TextStyle(fontSize: 16),
+                            minimumSize: const Size(UIConstants.buttonMinWidth, UIConstants.buttonHeight),
+                            textStyle: const TextStyle(fontSize: UIConstants.fontSizeLarge),
                           ),
                         ),
                     ],

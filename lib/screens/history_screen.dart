@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import '../services/storage_service.dart';
 import '../models/scan_result.dart';
+import '../core/constants/app_constants.dart';
 import 'treatment_screen.dart';
 
 class HistoryScreen extends StatelessWidget {
@@ -50,7 +51,7 @@ class HistoryScreen extends StatelessWidget {
                       color: Colors.grey[600],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: UIConstants.spacingSmall),
                   Text(
                     'Start scanning to track your farm health',
                     style: TextStyle(
@@ -79,7 +80,7 @@ class HistoryScreen extends StatelessWidget {
   }
 
   Widget _buildScanCard(BuildContext context, ScanResult scan) {
-    final dateFormatter = DateFormat('MMM dd, yyyy • HH:mm');
+    final dateFormatter = DateFormat(DateFormats.dateTimeDisplay);
     
     return Card(
       elevation: 4,
@@ -122,13 +123,13 @@ class HistoryScreen extends StatelessWidget {
                     Row(
                       children: [
                         if (scan.isAreaScan)
-                          const Icon(Icons.grid_on, size: 16, color: Colors.blue),
-                        const SizedBox(width: 4),
+                          const Icon(Icons.grid_on, size: UIConstants.iconSmall, color: Colors.blue),
+                        const SizedBox(width: UIConstants.spacingSmall),
                         Expanded(
                           child: Text(
                             scan.diseaseName ?? 'Unknown',
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: UIConstants.fontSizeLarge,
                               fontWeight: FontWeight.bold,
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -140,15 +141,15 @@ class HistoryScreen extends StatelessWidget {
                     Text(
                       dateFormatter.format(scan.timestamp),
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: UIConstants.fontSizeSmall,
                         color: Colors.grey[600],
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: UIConstants.spacingSmall),
                     Row(
                       children: [
                         _buildSeverityBadge(scan.severity),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: UIConstants.spacingSmall),
                         if (scan.confidence != null)
                           _buildConfidenceBadge(scan.confidence!),
                       ],
@@ -181,15 +182,15 @@ class HistoryScreen extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: UIConstants.paddingSmall, vertical: UIConstants.paddingSmall),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
       ),
       child: Text(
         severity ?? 'Unknown',
         style: TextStyle(
-          fontSize: 12,
+          fontSize: UIConstants.fontSizeSmall,
           color: color,
           fontWeight: FontWeight.bold,
         ),
@@ -200,15 +201,15 @@ class HistoryScreen extends StatelessWidget {
   Widget _buildConfidenceBadge(double confidence) {
     final percentage = (confidence * 100).toStringAsFixed(0);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: UIConstants.paddingSmall, vertical: UIConstants.paddingSmall),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.blue.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
       ),
       child: Text(
         '$percentage% conf.',
         style: const TextStyle(
-          fontSize: 12,
+          fontSize: UIConstants.fontSizeSmall,
           color: Colors.blue,
           fontWeight: FontWeight.bold,
         ),
