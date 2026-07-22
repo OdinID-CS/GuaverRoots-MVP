@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'dart:io';
 import '../models/scan_result.dart';
+import '../core/constants/app_constants.dart';
 import 'heatmap_screen.dart';
 
 class TreatmentScreen extends StatelessWidget {
@@ -31,21 +34,110 @@ class TreatmentScreen extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildImagePreview(),
+            const SizedBox(height: UIConstants.spacingLarge),
+            _buildTimestampCard(),
+            const SizedBox(height: UIConstants.spacingLarge),
             _buildDiseaseCard(),
-            const SizedBox(height: 16),
+            const SizedBox(height: UIConstants.spacingLarge),
+            _buildDescriptionCard(),
+            const SizedBox(height: UIConstants.spacingLarge),
             _buildConfidenceCard(),
-            const SizedBox(height: 16),
+            const SizedBox(height: UIConstants.spacingLarge),
             _buildSeverityCard(),
-            const SizedBox(height: 16),
+            const SizedBox(height: UIConstants.spacingLarge),
             _buildUrgencyCard(),
-            const SizedBox(height: 16),
+            const SizedBox(height: UIConstants.spacingLarge),
             _buildTreatmentCard(),
-            const SizedBox(height: 24),
+            const SizedBox(height: UIConstants.paddingXLarge),
             _buildActionButtons(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagePreview() {
+    return Card(
+      elevation: 4,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
+        child: Image.file(
+          File(scanResult.imagePath),
+          height: UIConstants.imagePreviewHeight,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              height: UIConstants.imagePreviewHeight,
+              color: Colors.grey[300],
+              child: const Icon(Icons.image, size: UIConstants.iconXLarge, color: Colors.grey),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimestampCard() {
+    final dateFormatter = DateFormat(DateFormats.dateTimeDisplay);
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
+        child: Row(
+          children: [
+            const Icon(Icons.access_time, color: Colors.grey, size: UIConstants.iconMedium),
+            const SizedBox(width: UIConstants.paddingMedium),
+            Text(
+              dateFormatter.format(scanResult.timestamp),
+              style: TextStyle(
+                fontSize: UIConstants.fontSizeMedium,
+                color: Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionCard() {
+    if (scanResult.description == null || scanResult.description!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      elevation: 4,
+      color: Colors.blue[50],
+      child: Padding(
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue, size: UIConstants.iconMedium),
+                SizedBox(width: UIConstants.spacingMedium),
+                Text(
+                  'About this Disease',
+                  style: TextStyle(
+                    fontSize: UIConstants.fontSizeMedium,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: UIConstants.spacingMedium),
+            Text(
+              scanResult.description!,
+              style: const TextStyle(fontSize: UIConstants.fontSizeMedium, height: 1.4),
+            ),
           ],
         ),
       ),
@@ -56,23 +148,23 @@ class TreatmentScreen extends StatelessWidget {
     return Card(
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Detected Disease',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 color: Colors.grey,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: UIConstants.spacingMedium),
             Text(
               scanResult.diseaseName ?? 'Unknown',
               style: const TextStyle(
-                fontSize: 24,
+                fontSize: UIConstants.fontSizeXXLarge,
                 fontWeight: FontWeight.bold,
                 color: Colors.green,
               ),
@@ -88,19 +180,19 @@ class TreatmentScreen extends StatelessWidget {
     return Card(
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Confidence',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 color: Colors.grey,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: UIConstants.spacingMedium),
             LinearProgressIndicator(
               value: scanResult.confidence ?? 0,
               backgroundColor: Colors.grey[300],
@@ -108,11 +200,11 @@ class TreatmentScreen extends StatelessWidget {
                 confidence > 80 ? Colors.green : Colors.orange,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: UIConstants.spacingMedium),
             Text(
               '${confidence.toStringAsFixed(1)}%',
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: UIConstants.fontSizeXLarge,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -142,26 +234,26 @@ class TreatmentScreen extends StatelessWidget {
     return Card(
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
         child: Row(
           children: [
             Container(
-              width: 12,
-              height: 12,
+              width: UIConstants.iconSmall,
+              height: UIConstants.iconSmall,
               decoration: BoxDecoration(
                 color: severityColor,
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: UIConstants.paddingMedium),
             const Text(
               'Severity: ',
-              style: TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: UIConstants.fontSizeLarge),
             ),
             Text(
               severity,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: UIConstants.fontSizeXLarge,
                 fontWeight: FontWeight.bold,
                 color: severityColor,
               ),
@@ -177,11 +269,11 @@ class TreatmentScreen extends StatelessWidget {
       elevation: 4,
       color: Colors.orange[50],
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
         child: Row(
           children: [
-            const Icon(Icons.schedule, color: Colors.orange, size: 28),
-            const SizedBox(width: 12),
+            const Icon(Icons.schedule, color: Colors.orange, size: UIConstants.iconXLarge),
+            const SizedBox(width: UIConstants.paddingMedium),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +281,7 @@ class TreatmentScreen extends StatelessWidget {
                   const Text(
                     'Urgency',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: UIConstants.fontSizeMedium,
                       color: Colors.grey,
                       fontWeight: FontWeight.w500,
                     ),
@@ -215,14 +307,14 @@ class TreatmentScreen extends StatelessWidget {
     return Card(
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Row(
               children: [
-                Icon(Icons.medical_services, color: Colors.green, size: 24),
-                SizedBox(width: 8),
+                Icon(Icons.medical_services, color: Colors.green, size: UIConstants.iconMedium),
+                SizedBox(width: UIConstants.spacingMedium),
                 Text(
                   'Recommended Treatment',
                   style: TextStyle(
@@ -232,10 +324,10 @@ class TreatmentScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: UIConstants.paddingMedium),
             Text(
               scanResult.treatment ?? 'No treatment recommendation available',
-              style: const TextStyle(fontSize: 16, height: 1.5),
+              style: const TextStyle(fontSize: UIConstants.fontSizeLarge, height: 1.5),
             ),
           ],
         ),
@@ -254,12 +346,12 @@ class TreatmentScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle: const TextStyle(fontSize: 16),
+              padding: const EdgeInsets.symmetric(vertical: UIConstants.paddingLarge),
+              textStyle: const TextStyle(fontSize: UIConstants.fontSizeLarge),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: UIConstants.paddingMedium),
         if (scanResult.isAreaScan)
           Expanded(
             child: ElevatedButton.icon(
@@ -276,8 +368,8 @@ class TreatmentScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                textStyle: const TextStyle(fontSize: 16),
+                padding: const EdgeInsets.symmetric(vertical: UIConstants.paddingLarge),
+                textStyle: const TextStyle(fontSize: UIConstants.fontSizeLarge),
               ),
             ),
           ),

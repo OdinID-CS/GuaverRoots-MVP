@@ -20,6 +20,7 @@ dependencies:
   # Camera & Image
   camera: ^0.10.5+5
   image_picker: ^1.0.5
+  image: ^4.1.7
   
   # HTTP & API
   dio: ^5.4.0
