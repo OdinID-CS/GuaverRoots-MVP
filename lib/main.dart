@@ -5,7 +5,10 @@ import 'package:camera/camera.dart';
 import 'screens/home_screen.dart';
 import 'services/storage_service.dart';
 import 'services/api_service.dart';
+import 'services/weather_service.dart';
 import 'models/scan_result.dart';
+import 'models/weather_data.dart';
+import 'providers/app_providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,7 +16,9 @@ void main() async {
   // Initialize Hive for local storage
   await Hive.initFlutter();
   Hive.registerAdapter(ScanResultAdapter());
+  Hive.registerAdapter(WeatherDataAdapter());
   await StorageService.init();
+  await WeatherService.init();
   
   // Initialize cameras
   final cameras = await availableCameras();
@@ -31,6 +36,7 @@ class GuaverRootsApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ApiService()),
+        ChangeNotifierProvider(create: (_) => HistoryProvider()),
         Provider.value(value: cameras),
       ],
       child: MaterialApp(

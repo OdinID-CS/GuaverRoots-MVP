@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import '../models/scan_result.dart';
 import '../core/constants/app_constants.dart';
+import 'treatment_screen.dart';
 
 class HeatmapScreen extends StatelessWidget {
   final ScanResult scanResult;
@@ -24,9 +25,17 @@ class HeatmapScreen extends StatelessWidget {
           children: [
             _buildLegend(),
             const SizedBox(height: UIConstants.paddingMedium),
-            _buildHeatmapGrid(),
+            _buildHeatmapGrid(context),
             const SizedBox(height: UIConstants.paddingLarge),
             _buildSummaryCard(),
+            if (scanResult.overallSummary != null) ...[
+              const SizedBox(height: UIConstants.paddingMedium),
+              _buildOverallSummaryCard(),
+            ],
+            if (scanResult.recommendation != null) ...[
+              const SizedBox(height: UIConstants.paddingMedium),
+              _buildRecommendationCard(),
+            ],
           ],
         ),
       ),
@@ -81,8 +90,9 @@ class HeatmapScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeatmapGrid() {
+  Widget _buildHeatmapGrid(BuildContext context) {
     final images = scanResult.areaScanImages ?? [scanResult.imagePath];
+    final results = scanResult.areaScanResults;
     
     return Card(
       elevation: 4,
@@ -109,52 +119,77 @@ class HeatmapScreen extends StatelessWidget {
               ),
               itemCount: images.length,
               itemBuilder: (context, index) {
-                final healthStatus = _getHealthStatus(index);
-                return Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
-                      child: Image.file(
-                        File(images[index]),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
+                final healthStatus = _getHealthStatus(index, results);
+                return GestureDetector(
+                  onTap: () => _showSectionDetails(context, index, results),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
+                        child: Image.file(
+                          File(images[index]),
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
                       ),
-                    ),
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
-                          border: Border.all(
-                            color: healthStatus.color,
-                            width: 3,
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
+                            border: Border.all(
+                              color: healthStatus.color,
+                              width: 3,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      top: 4,
-                      left: 4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: UIConstants.paddingSmall,
-                          vertical: UIConstants.paddingSmall,
-                        ),
-                        decoration: BoxDecoration(
-                          color: healthStatus.color.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
-                        ),
-                        child: Text(
-                          healthStatus.label,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: UIConstants.fontSizeSmall,
-                            fontWeight: FontWeight.bold,
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: UIConstants.paddingSmall,
+                            vertical: UIConstants.paddingSmall,
+                          ),
+                          decoration: BoxDecoration(
+                            color: healthStatus.color.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
+                          ),
+                          child: Text(
+                            healthStatus.label,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: UIConstants.fontSizeSmall,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        bottom: 4,
+                        right: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: UIConstants.paddingSmall,
+                            vertical: UIConstants.paddingSmall,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
+                          ),
+                          child: Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: UIConstants.fontSizeSmall,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -166,18 +201,33 @@ class HeatmapScreen extends StatelessWidget {
 
   Widget _buildSummaryCard() {
     final images = scanResult.areaScanImages ?? [scanResult.imagePath];
-    int healthy = 0;
+    final results = scanResult.areaScanResults;
+    
+    // Use actual counts from backend if available, otherwise calculate from results
+    int healthy = scanResult.healthySections ?? 0;
     int monitoring = 0;
     int highRisk = 0;
 
-    for (int i = 0; i < images.length; i++) {
-      final status = _getHealthStatus(i);
-      if (status.label == 'Healthy') {
-        healthy++;
-      } else if (status.label == 'Monitor') {
-        monitoring++;
-      } else {
-        highRisk++;
+    if (results != null) {
+      for (var result in results) {
+        final status = _getHealthStatusFromResult(result);
+        if (status.label == 'Monitor') {
+          monitoring++;
+        } else if (status.label == 'Risk') {
+          highRisk++;
+        }
+      }
+    } else {
+      // Fallback to simulated data
+      for (int i = 0; i < images.length; i++) {
+        final status = _getHealthStatus(i, null);
+        if (status.label == 'Healthy') {
+          healthy++;
+        } else if (status.label == 'Monitor') {
+          monitoring++;
+        } else {
+          highRisk++;
+        }
       }
     }
 
@@ -204,7 +254,7 @@ class HeatmapScreen extends StatelessWidget {
             const Divider(),
             const SizedBox(height: UIConstants.paddingMedium),
             Text(
-              'Total Scanned: ${images.length} locations',
+              'Total Scanned: ${scanResult.totalSections ?? images.length} locations',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -242,14 +292,123 @@ class HeatmapScreen extends StatelessWidget {
     );
   }
 
-  ({String label, Color color}) _getHealthStatus(int index) {
-    // Simulate health status based on index for demo
-    // In real app, this would come from AI analysis
+  ({String label, Color color}) _getHealthStatus(int index, List<dynamic>? results) {
+    // Use actual results from backend if available
+    if (results != null && index < results.length) {
+      return _getHealthStatusFromResult(results[index]);
+    }
+    
+    // Fallback to simulated data for demo
     final statuses = [
       (label: 'Healthy', color: Colors.green),
       (label: 'Monitor', color: Colors.yellow),
       (label: 'Risk', color: Colors.red),
     ];
     return statuses[index % statuses.length];
+  }
+
+  ({String label, Color color}) _getHealthStatusFromResult(dynamic result) {
+    final severity = result['severity']?.toString().toLowerCase() ?? 'low';
+    final isHealthy = result['is_healthy'] ?? false;
+    
+    if (isHealthy || severity == 'none' || severity == 'low') {
+      return (label: 'Healthy', color: Colors.green);
+    } else if (severity == 'moderate') {
+      return (label: 'Monitor', color: Colors.yellow);
+    } else {
+      return (label: 'Risk', color: Colors.red);
+    }
+  }
+
+  void _showSectionDetails(BuildContext context, int index, List<dynamic>? results) {
+    if (results != null && index < results.length) {
+      final result = results[index];
+      final sectionResult = ScanResult(
+        id: result['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        imagePath: scanResult.areaScanImages?[index] ?? scanResult.imagePath,
+        timestamp: DateTime.now(),
+        diseaseName: result['disease_name']?.toString(),
+        confidence: result['confidence']?.toDouble(),
+        severity: result['severity']?.toString(),
+        treatment: result['treatment']?.toString(),
+        urgency: result['urgency']?.toString(),
+        description: result['description']?.toString(),
+        isAreaScan: false,
+        notes: result['notes']?.toString(),
+      );
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TreatmentScreen(scanResult: sectionResult),
+        ),
+      );
+    }
+  }
+
+  Widget _buildOverallSummaryCard() {
+    return Card(
+      elevation: 4,
+      color: Colors.green[50],
+      child: Padding(
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.green[700]),
+                const SizedBox(width: 8),
+                const Text(
+                  'Overall Summary',
+                  style: TextStyle(
+                    fontSize: UIConstants.fontSizeMedium,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: UIConstants.paddingMedium),
+            Text(
+              scanResult.overallSummary ?? 'No summary available',
+              style: const TextStyle(fontSize: UIConstants.fontSizeMedium),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecommendationCard() {
+    return Card(
+      elevation: 4,
+      color: Colors.orange[50],
+      child: Padding(
+        padding: const EdgeInsets.all(UIConstants.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.lightbulb_outline, color: Colors.orange[700]),
+                const SizedBox(width: 8),
+                const Text(
+                  'Recommendation',
+                  style: TextStyle(
+                    fontSize: UIConstants.fontSizeMedium,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: UIConstants.paddingMedium),
+            Text(
+              scanResult.recommendation ?? 'No recommendation available',
+              style: const TextStyle(fontSize: UIConstants.fontSizeMedium),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -40,6 +40,27 @@ class ScanResult extends HiveObject {
   @HiveField(11)
   final String? description;
 
+  @HiveField(12)
+  final List<dynamic>? areaScanResults;
+
+  @HiveField(13)
+  final String? overallSummary;
+
+  @HiveField(14)
+  final String? recommendation;
+
+  @HiveField(15)
+  final String? riskLevel;
+
+  @HiveField(16)
+  final int? totalSections;
+
+  @HiveField(17)
+  final int? healthySections;
+
+  @HiveField(18)
+  final int? diseasedSections;
+
   ScanResult({
     required this.id,
     required this.imagePath,
@@ -53,6 +74,13 @@ class ScanResult extends HiveObject {
     this.areaScanImages,
     this.notes,
     this.description,
+    this.areaScanResults,
+    this.overallSummary,
+    this.recommendation,
+    this.riskLevel,
+    this.totalSections,
+    this.healthySections,
+    this.diseasedSections,
   });
 
   ScanResult copyWith({
@@ -68,6 +96,13 @@ class ScanResult extends HiveObject {
     List<String>? areaScanImages,
     String? notes,
     String? description,
+    List<dynamic>? areaScanResults,
+    String? overallSummary,
+    String? recommendation,
+    String? riskLevel,
+    int? totalSections,
+    int? healthySections,
+    int? diseasedSections,
   }) {
     return ScanResult(
       id: id ?? this.id,
@@ -82,6 +117,13 @@ class ScanResult extends HiveObject {
       areaScanImages: areaScanImages ?? this.areaScanImages,
       notes: notes ?? this.notes,
       description: description ?? this.description,
+      areaScanResults: areaScanResults ?? this.areaScanResults,
+      overallSummary: overallSummary ?? this.overallSummary,
+      recommendation: recommendation ?? this.recommendation,
+      riskLevel: riskLevel ?? this.riskLevel,
+      totalSections: totalSections ?? this.totalSections,
+      healthySections: healthySections ?? this.healthySections,
+      diseasedSections: diseasedSections ?? this.diseasedSections,
     );
   }
 
@@ -101,6 +143,13 @@ class ScanResult extends HiveObject {
           : null,
       notes: json['notes'],
       description: json['description'],
+      areaScanResults: json['results'],
+      overallSummary: json['overall_summary'],
+      recommendation: json['recommendation'],
+      riskLevel: json['risk_level'],
+      totalSections: json['total_sections']?.toInt(),
+      healthySections: json['healthy_sections']?.toInt(),
+      diseasedSections: json['diseased_sections']?.toInt(),
     );
   }
 
@@ -118,6 +167,13 @@ class ScanResult extends HiveObject {
       'area_scan_images': areaScanImages,
       'notes': notes,
       'description': description,
+      'results': areaScanResults,
+      'overall_summary': overallSummary,
+      'recommendation': recommendation,
+      'risk_level': riskLevel,
+      'total_sections': totalSections,
+      'healthy_sections': healthySections,
+      'diseased_sections': diseasedSections,
     };
   }
 }

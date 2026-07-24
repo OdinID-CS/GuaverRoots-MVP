@@ -8,6 +8,7 @@ import '../core/constants/app_constants.dart';
 import '../core/logging/app_logger.dart';
 import '../utils/image_compressor.dart';
 import 'treatment_screen.dart';
+import 'heatmap_screen.dart';
 
 class AreaScanScreen extends StatefulWidget {
   const AreaScanScreen({super.key});
@@ -79,12 +80,22 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
         await StorageService.saveScanResult(result);
         
         if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TreatmentScreen(scanResult: result),
-            ),
-          );
+          // Navigate to HeatmapScreen if area scan results are available, otherwise TreatmentScreen
+          if (result.areaScanResults != null && result.areaScanResults!.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HeatmapScreen(scanResult: result),
+              ),
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TreatmentScreen(scanResult: result),
+              ),
+            );
+          }
         }
       } else if (mounted) {
         AppLogger.warning('Area scan analysis returned null result');

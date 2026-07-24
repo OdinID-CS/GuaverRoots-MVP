@@ -28,13 +28,21 @@ class ScanResultAdapter extends TypeAdapter<ScanResult> {
       isAreaScan: fields[8] as bool,
       areaScanImages: (fields[9] as List?)?.cast<String>(),
       notes: fields[10] as String?,
+      description: fields[11] as String?,
+      areaScanResults: (fields[12] as List?)?.cast<dynamic>(),
+      overallSummary: fields[13] as String?,
+      recommendation: fields[14] as String?,
+      riskLevel: fields[15] as String?,
+      totalSections: fields[16] as int?,
+      healthySections: fields[17] as int?,
+      diseasedSections: fields[18] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ScanResult obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -56,7 +64,23 @@ class ScanResultAdapter extends TypeAdapter<ScanResult> {
       ..writeByte(9)
       ..write(obj.areaScanImages)
       ..writeByte(10)
-      ..write(obj.notes);
+      ..write(obj.notes)
+      ..writeByte(11)
+      ..write(obj.description)
+      ..writeByte(12)
+      ..write(obj.areaScanResults)
+      ..writeByte(13)
+      ..write(obj.overallSummary)
+      ..writeByte(14)
+      ..write(obj.recommendation)
+      ..writeByte(15)
+      ..write(obj.riskLevel)
+      ..writeByte(16)
+      ..write(obj.totalSections)
+      ..writeByte(17)
+      ..write(obj.healthySections)
+      ..writeByte(18)
+      ..write(obj.diseasedSections);
   }
 
   @override

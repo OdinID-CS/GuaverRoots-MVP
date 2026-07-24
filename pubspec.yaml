@@ -33,6 +33,7 @@ dependencies:
   
   # Permissions
   permission_handler: ^11.1.0
+  geolocator: ^10.1.0
   
   # Utils
   intl: ^0.18.1

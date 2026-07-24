@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
-import '../services/storage_service.dart';
 import '../models/scan_result.dart';
 import '../core/constants/app_constants.dart';
 import 'treatment_screen.dart';
+import 'heatmap_screen.dart';
+import '../providers/app_providers.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
@@ -24,14 +26,9 @@ class HistoryScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: FutureBuilder<List<ScanResult>>(
-        future: Future.value(StorageService.getAllScanResults()),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Colors.green));
-          }
-
-          final scans = snapshot.data ?? [];
+      body: Consumer<HistoryProvider>(
+        builder: (context, historyProvider, child) {
+          final scans = historyProvider.scanHistory;
 
           if (scans.isEmpty) {
             return Center(
@@ -64,15 +61,15 @@ class HistoryScreen extends StatelessWidget {
             );
           }
 
-          // Sort by timestamp descending
-          scans.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: scans.length,
-            itemBuilder: (context, index) {
-              return _buildScanCard(context, scans[index]);
-            },
+          return RefreshIndicator(
+            onRefresh: () => historyProvider.refreshHistory(),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: scans.length,
+              itemBuilder: (context, index) {
+                return _buildScanCard(context, scans[index]);
+              },
+            ),
           );
         },
       ),
@@ -87,12 +84,22 @@ class HistoryScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TreatmentScreen(scanResult: scan),
-            ),
-          );
+          // Navigate to HeatmapScreen for area scans with results, otherwise TreatmentScreen
+          if (scan.isAreaScan && scan.areaScanResults != null && scan.areaScanResults!.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HeatmapScreen(scanResult: scan),
+              ),
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TreatmentScreen(scanResult: scan),
+              ),
+            );
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -230,9 +237,9 @@ class HistoryScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () async {
-              await StorageService.clearAll();
+              final historyProvider = context.read<HistoryProvider>();
+              await historyProvider.clearAll();
               if (context.mounted) {
-                Navigator.pop(context);
                 Navigator.pop(context);
               }
             },
