@@ -1,6 +1,6 @@
 library ai_inference_service;
 
-import '../models/prediction.dart';
+import 'package:guaverroots/models/prediction.dart';
 
 /// Abstract interface for AI disease inference
 /// 

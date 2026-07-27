@@ -7,6 +7,7 @@ import '../core/constants/app_constants.dart';
 import 'treatment_screen.dart';
 import 'heatmap_screen.dart';
 import '../providers/app_providers.dart';
+import '../widgets/glass_card.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
@@ -14,64 +15,95 @@ class HistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text('Farm History'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _showClearDialog(context),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFE8F5E9),
+              Color(0xFFF1F8E9),
+              Color(0xFFFAFFFA),
+            ],
           ),
-        ],
-      ),
-      body: Consumer<HistoryProvider>(
-        builder: (context, historyProvider, child) {
-          final scans = historyProvider.scanHistory;
-
-          if (scans.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.history,
-                    size: 80,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No scan history yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: UIConstants.spacingSmall),
-                  Text(
-                    'Start scanning to track your farm health',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
+        ),
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              backgroundColor: const Color(AppColors.forestGreen),
+              title: const Text(
+                'Farm History',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
               ),
-            );
-          }
+              actions: [
+                Consumer<HistoryProvider>(
+                  builder: (context, historyProvider, child) {
+                    final hasHistory = historyProvider.scanHistory.isNotEmpty;
+                    return IconButton(
+                      icon: Icon(Icons.delete_outline, color: hasHistory ? Colors.white : Colors.white54),
+                      onPressed: hasHistory ? () => _showClearDialog(context) : null,
+                    );
+                  },
+                ),
+              ],
+            ),
+            Consumer<HistoryProvider>(
+              builder: (context, historyProvider, child) {
+                final scans = historyProvider.scanHistory;
 
-          return RefreshIndicator(
-            onRefresh: () => historyProvider.refreshHistory(),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: scans.length,
-              itemBuilder: (context, index) {
-                return _buildScanCard(context, scans[index]);
+                if (scans.isEmpty) {
+                  return SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(AppColors.forestGreen).withValues(alpha: 0.08),
+                            ),
+                            child: Icon(Icons.history, size: 64, color: Colors.grey[400]),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'No scan history yet',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Start scanning to track your farm health',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return SliverPadding(
+                  padding: const EdgeInsets.all(UIConstants.paddingLarge),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        return _buildScanCard(context, scans[index]);
+                      },
+                      childCount: scans.length,
+                    ),
+                  ),
+                );
               },
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
@@ -79,12 +111,10 @@ class HistoryScreen extends StatelessWidget {
   Widget _buildScanCard(BuildContext context, ScanResult scan) {
     final dateFormatter = DateFormat(DateFormats.dateTimeDisplay);
     
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: UIConstants.paddingLarge),
+      child: GlassCard(
         onTap: () {
-          // Navigate to HeatmapScreen for area scans with results, otherwise TreatmentScreen
           if (scan.isAreaScan && scan.areaScanResults != null && scan.areaScanResults!.isNotEmpty) {
             Navigator.push(
               context,
@@ -101,72 +131,79 @@ class HistoryScreen extends StatelessWidget {
             );
           }
         },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  File(scan.imagePath),
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 80,
-                      height: 80,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.image, color: Colors.grey),
-                    );
-                  },
-                ),
+        opacity: 0.75,
+        borderColor: Colors.white.withValues(alpha: 0.4),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
+              child: Image.file(
+                File(scan.imagePath),
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey[300],
+                    child: Icon(Icons.image, color: Colors.grey),
+                  );
+                },
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        if (scan.isAreaScan)
-                          const Icon(Icons.grid_on, size: UIConstants.iconSmall, color: Colors.blue),
-                        const SizedBox(width: UIConstants.spacingSmall),
-                        Expanded(
-                          child: Text(
-                            scan.diseaseName ?? 'Unknown',
-                            style: const TextStyle(
-                              fontSize: UIConstants.fontSizeLarge,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(width: UIConstants.paddingMedium),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (scan.isAreaScan)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(AppColors.bluePrimary).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child: Icon(Icons.grid_on, size: UIConstants.iconSmall, color: const Color(AppColors.bluePrimary)),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      dateFormatter.format(scan.timestamp),
-                      style: TextStyle(
-                        fontSize: UIConstants.fontSizeSmall,
-                        color: Colors.grey[600],
+                      if (scan.isAreaScan) const SizedBox(width: UIConstants.spacingSmall),
+                      Expanded(
+                        child: Text(
+                          scan.diseaseName ?? 'Unknown',
+                          style: const TextStyle(
+                            fontSize: UIConstants.fontSizeLarge,
+                            fontWeight: FontWeight.w700,
+                            color: Color(AppColors.forestGreen),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    dateFormatter.format(scan.timestamp),
+                    style: TextStyle(
+                      fontSize: UIConstants.fontSizeSmall,
+                      color: Colors.grey[600],
                     ),
-                    const SizedBox(height: UIConstants.spacingSmall),
-                    Row(
-                      children: [
-                        _buildSeverityBadge(scan.severity),
-                        const SizedBox(width: UIConstants.spacingSmall),
-                        if (scan.confidence != null)
-                          _buildConfidenceBadge(scan.confidence!),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: UIConstants.spacingSmall),
+                  Row(
+                    children: [
+                      _buildSeverityBadge(scan.severity),
+                      const SizedBox(width: UIConstants.spacingSmall),
+                      if (scan.confidence != null)
+                        _buildConfidenceBadge(scan.confidence!),
+                    ],
+                  ),
+                ],
               ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
-            ],
-          ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey[500]),
+          ],
         ),
       ),
     );
@@ -176,13 +213,13 @@ class HistoryScreen extends StatelessWidget {
     Color color;
     switch (severity?.toLowerCase()) {
       case 'low':
-        color = Colors.green;
+        color = const Color(AppColors.forestGreen);
         break;
       case 'moderate':
-        color = Colors.orange;
+        color = const Color(AppColors.orangePrimary);
         break;
       case 'high':
-        color = Colors.red;
+        color = const Color(AppColors.redPrimary);
         break;
       default:
         color = Colors.grey;
@@ -199,7 +236,7 @@ class HistoryScreen extends StatelessWidget {
         style: TextStyle(
           fontSize: UIConstants.fontSizeSmall,
           color: color,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -210,15 +247,15 @@ class HistoryScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: UIConstants.paddingSmall, vertical: UIConstants.paddingSmall),
       decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.1),
+        color: const Color(AppColors.bluePrimary).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
       ),
       child: Text(
         '$percentage% conf.',
         style: const TextStyle(
           fontSize: UIConstants.fontSizeSmall,
-          color: Colors.blue,
-          fontWeight: FontWeight.bold,
+          color: Color(AppColors.bluePrimary),
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -243,7 +280,7 @@ class HistoryScreen extends StatelessWidget {
                 Navigator.pop(context);
               }
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: const Color(AppColors.redPrimary)),
             child: const Text('Clear All'),
           ),
         ],

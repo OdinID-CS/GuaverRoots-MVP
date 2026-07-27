@@ -36,6 +36,7 @@ class ScanResultAdapter extends TypeAdapter<ScanResult> {
       totalSections: fields[16] as int?,
       healthySections: fields[17] as int?,
       diseasedSections: fields[18] as int?,
+      location: fields[19] as String?,
     );
   }
 
@@ -80,7 +81,9 @@ class ScanResultAdapter extends TypeAdapter<ScanResult> {
       ..writeByte(17)
       ..write(obj.healthySections)
       ..writeByte(18)
-      ..write(obj.diseasedSections);
+      ..write(obj.diseasedSections)
+      ..writeByte(19)
+      ..write(obj.location);
   }
 
   @override

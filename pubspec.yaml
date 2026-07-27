@@ -35,8 +35,15 @@ dependencies:
   permission_handler: ^11.1.0
   geolocator: ^10.1.0
   
+  # AI
+  tflite_flutter: ^0.12.1
+
   # Utils
   intl: ^0.18.1
+
+  # Notifications
+  flutter_local_notifications: ^17.0.0
+  timezone: ^0.9.3
 
 dev_dependencies:
   flutter_test:
@@ -51,3 +58,5 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/models/
+    - assets/labels/

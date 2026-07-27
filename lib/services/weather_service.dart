@@ -3,7 +3,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/weather_data.dart';
-import '../core/constants/app_constants.dart';
 import '../core/logging/app_logger.dart';
 
 class WeatherService {
@@ -67,7 +66,7 @@ class WeatherService {
       }
 
       // Fetch weather from Open-Meteo API (no API key required)
-      final url = 'https://api.open-meteo.com/v1/forecast';
+      const url = 'https://api.open-meteo.com/v1/forecast';
       final params = {
         'latitude': position.latitude,
         'longitude': position.longitude,

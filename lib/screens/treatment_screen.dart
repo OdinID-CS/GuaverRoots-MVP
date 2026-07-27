@@ -3,69 +3,140 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import '../models/scan_result.dart';
 import '../core/constants/app_constants.dart';
+import '../services/recommendation_engine.dart';
+import '../services/notification_service.dart';
 import 'heatmap_screen.dart';
+import '../widgets/glass_card.dart';
 
-class TreatmentScreen extends StatelessWidget {
+class TreatmentScreen extends StatefulWidget {
   final ScanResult scanResult;
 
   const TreatmentScreen({super.key, required this.scanResult});
 
   @override
+  State<TreatmentScreen> createState() => _TreatmentScreenState();
+}
+
+class _TreatmentScreenState extends State<TreatmentScreen> {
+  @override
   Widget build(BuildContext context) {
+    final scanResult = widget.scanResult;
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text('Treatment'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        actions: [
-          if (scanResult.isAreaScan)
-            IconButton(
-              icon: const Icon(Icons.map),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => HeatmapScreen(scanResult: scanResult),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFE8F5E9),
+              Color(0xFFF1F8E9),
+              Color(0xFFFAFFFA),
+            ],
+          ),
+        ),
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 160,
+              floating: false,
+              pinned: true,
+              backgroundColor: const Color(AppColors.forestGreen),
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(
+                  scanResult.diseaseName ?? 'Treatment',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black45,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                );
-              },
+                ),
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(AppColors.forestGreen),
+                        Color(0xFF2E7D32),
+                      ],
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.medical_services,
+                    size: 80,
+                    color: Color(AppColors.limeGreen),
+                  ),
+                ),
+              ),
+              actions: [
+                if (scanResult.isAreaScan)
+                  IconButton(
+                    icon: const Icon(Icons.map, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => HeatmapScreen(scanResult: scanResult),
+                        ),
+                      );
+                    },
+                  ),
+              ],
             ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(UIConstants.paddingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildImagePreview(),
-            const SizedBox(height: UIConstants.spacingLarge),
-            _buildTimestampCard(),
-            const SizedBox(height: UIConstants.spacingLarge),
-            _buildDiseaseCard(),
-            const SizedBox(height: UIConstants.spacingLarge),
-            _buildDescriptionCard(),
-            const SizedBox(height: UIConstants.spacingLarge),
-            _buildConfidenceCard(),
-            const SizedBox(height: UIConstants.spacingLarge),
-            _buildSeverityCard(),
-            const SizedBox(height: UIConstants.spacingLarge),
-            _buildUrgencyCard(),
-            const SizedBox(height: UIConstants.spacingLarge),
-            _buildTreatmentCard(),
-            const SizedBox(height: UIConstants.paddingXLarge),
-            _buildActionButtons(context),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(UIConstants.paddingXLarge),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildImagePreview(scanResult),
+                    const SizedBox(height: UIConstants.spacingLarge),
+                    _buildTimestampCard(scanResult),
+                    const SizedBox(height: UIConstants.spacingLarge),
+                    _buildDiseaseCard(scanResult),
+                    const SizedBox(height: UIConstants.spacingLarge),
+                    if (scanResult.description != null && scanResult.description!.isNotEmpty) ...[
+                      _buildDescriptionCard(scanResult),
+                      const SizedBox(height: UIConstants.spacingLarge),
+                    ],
+                    _buildConfidenceCard(scanResult),
+                    const SizedBox(height: UIConstants.spacingLarge),
+                    _buildSeverityCard(scanResult),
+                    const SizedBox(height: UIConstants.spacingLarge),
+                    _buildUrgencyCard(scanResult),
+                    const SizedBox(height: UIConstants.spacingLarge),
+                    _buildTreatmentCard(scanResult),
+                    const SizedBox(height: UIConstants.spacingXLarge),
+                    _buildRecommendationCard(scanResult),
+                    const SizedBox(height: UIConstants.spacingLarge),
+                    _buildReminderButton(scanResult),
+                    const SizedBox(height: UIConstants.spacingLarge),
+                    _buildLocationCard(scanResult),
+                    const SizedBox(height: UIConstants.spacingLarge),
+                    _buildActionButtons(context, scanResult),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildImagePreview() {
-    return Card(
-      elevation: 4,
+  Widget _buildImagePreview(ScanResult scanResult) {
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      opacity: 0.7,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
+        borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
         child: Image.file(
           File(scanResult.imagePath),
           height: UIConstants.imagePreviewHeight,
@@ -75,7 +146,7 @@ class TreatmentScreen extends StatelessWidget {
             return Container(
               height: UIConstants.imagePreviewHeight,
               color: Colors.grey[300],
-              child: const Icon(Icons.image, size: UIConstants.iconXLarge, color: Colors.grey),
+              child: Icon(Icons.image, size: UIConstants.iconXLarge, color: Colors.grey),
             );
           },
         ),
@@ -83,259 +154,366 @@ class TreatmentScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTimestampCard() {
+  Widget _buildTimestampCard(ScanResult scanResult) {
     final dateFormatter = DateFormat(DateFormats.dateTimeDisplay);
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(UIConstants.paddingMedium),
-        child: Row(
-          children: [
-            const Icon(Icons.access_time, color: Colors.grey, size: UIConstants.iconMedium),
-            const SizedBox(width: UIConstants.paddingMedium),
-            Text(
-              dateFormatter.format(scanResult.timestamp),
-              style: TextStyle(
-                fontSize: UIConstants.fontSizeMedium,
-                color: Colors.grey[700],
-              ),
+    return GlassCard(
+      padding: const EdgeInsets.all(UIConstants.paddingMedium),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(AppColors.forestGreen).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
             ),
-          ],
-        ),
+            child: const Icon(Icons.access_time, color: Color(AppColors.forestGreen), size: UIConstants.iconMedium),
+          ),
+          const SizedBox(width: UIConstants.paddingMedium),
+          Text(
+            dateFormatter.format(scanResult.timestamp),
+            style: TextStyle(
+              fontSize: UIConstants.fontSizeMedium,
+              color: const Color(AppColors.forestGreen).withValues(alpha: 0.8),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildDescriptionCard() {
-    if (scanResult.description == null || scanResult.description!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Card(
-      elevation: 4,
-      color: Colors.blue[50],
-      child: Padding(
-        padding: const EdgeInsets.all(UIConstants.paddingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue, size: UIConstants.iconMedium),
-                SizedBox(width: UIConstants.spacingMedium),
-                Text(
-                  'About this Disease',
-                  style: TextStyle(
-                    fontSize: UIConstants.fontSizeMedium,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
+  Widget _buildDescriptionCard(ScanResult scanResult) {
+    return GlassCard(
+      padding: const EdgeInsets.all(UIConstants.paddingMedium),
+      opacity: 0.6,
+      borderColor: const Color(AppColors.bluePrimary).withValues(alpha: 0.2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.info_outline, color: Color(AppColors.bluePrimary), size: UIConstants.iconMedium),
+              const SizedBox(width: UIConstants.spacingMedium),
+              Text(
+                'About this Disease',
+                style: TextStyle(
+                  fontSize: UIConstants.fontSizeMedium,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(AppColors.bluePrimary),
                 ),
-              ],
-            ),
-            const SizedBox(height: UIConstants.spacingMedium),
-            Text(
-              scanResult.description!,
-              style: const TextStyle(fontSize: UIConstants.fontSizeMedium, height: 1.4),
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: UIConstants.spacingMedium),
+          Text(
+            scanResult.description!,
+            style: const TextStyle(fontSize: UIConstants.fontSizeMedium, height: 1.4),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildDiseaseCard() {
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(UIConstants.paddingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Detected Disease',
-              style: TextStyle(
-                fontSize: UIConstants.fontSizeMedium,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
-              ),
+  Widget _buildDiseaseCard(ScanResult scanResult) {
+    return GlassCard(
+      padding: const EdgeInsets.all(UIConstants.paddingMedium),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Detected Disease',
+            style: TextStyle(
+              fontSize: UIConstants.fontSizeMedium,
+              color: const Color(AppColors.forestGreen).withValues(alpha: 0.7),
+              fontWeight: FontWeight.w500,
             ),
-            const SizedBox(height: UIConstants.spacingMedium),
-            Text(
-              scanResult.diseaseName ?? 'Unknown',
-              style: const TextStyle(
-                fontSize: UIConstants.fontSizeXXLarge,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
+          ),
+          const SizedBox(height: UIConstants.spacingMedium),
+          Text(
+            scanResult.diseaseName ?? 'Unknown',
+            style: const TextStyle(
+              fontSize: UIConstants.fontSizeXXLarge,
+              fontWeight: FontWeight.w800,
+              color: Color(AppColors.forestGreen),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildConfidenceCard() {
+  Widget _buildConfidenceCard(ScanResult scanResult) {
     final confidence = (scanResult.confidence ?? 0) * 100;
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(UIConstants.paddingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Confidence',
-              style: TextStyle(
-                fontSize: UIConstants.fontSizeMedium,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
-              ),
+    return GlassCard(
+      padding: const EdgeInsets.all(UIConstants.paddingMedium),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Confidence',
+            style: TextStyle(
+              fontSize: UIConstants.fontSizeMedium,
+              color: const Color(AppColors.forestGreen).withValues(alpha: 0.7),
+              fontWeight: FontWeight.w500,
             ),
-            const SizedBox(height: UIConstants.spacingMedium),
-            LinearProgressIndicator(
+          ),
+          const SizedBox(height: UIConstants.spacingMedium),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
               value: scanResult.confidence ?? 0,
               backgroundColor: Colors.grey[300],
               valueColor: AlwaysStoppedAnimation<Color>(
-                confidence > 80 ? Colors.green : Colors.orange,
+                confidence > 80 ? const Color(AppColors.forestGreen) : const Color(AppColors.orangePrimary),
               ),
+              minHeight: 10,
             ),
-            const SizedBox(height: UIConstants.spacingMedium),
-            Text(
-              '${confidence.toStringAsFixed(1)}%',
-              style: const TextStyle(
-                fontSize: UIConstants.fontSizeXLarge,
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          const SizedBox(height: UIConstants.spacingMedium),
+          Text(
+            '${confidence.toStringAsFixed(1)}%',
+            style: const TextStyle(
+              fontSize: UIConstants.fontSizeXLarge,
+              fontWeight: FontWeight.w800,
+              color: Color(AppColors.forestGreen),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSeverityCard() {
+  Widget _buildSeverityCard(ScanResult scanResult) {
     final severity = scanResult.severity ?? 'Unknown';
     Color severityColor;
     switch (severity.toLowerCase()) {
       case 'low':
-        severityColor = Colors.green;
+        severityColor = const Color(AppColors.forestGreen);
         break;
       case 'moderate':
-        severityColor = Colors.orange;
+        severityColor = const Color(AppColors.orangePrimary);
         break;
       case 'high':
-        severityColor = Colors.red;
+        severityColor = const Color(AppColors.redPrimary);
         break;
       default:
         severityColor = Colors.grey;
     }
 
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(UIConstants.paddingMedium),
-        child: Row(
-          children: [
-            Container(
-              width: UIConstants.iconSmall,
-              height: UIConstants.iconSmall,
-              decoration: BoxDecoration(
-                color: severityColor,
-                shape: BoxShape.circle,
-              ),
+    return GlassCard(
+      padding: const EdgeInsets.all(UIConstants.paddingMedium),
+      child: Row(
+        children: [
+          Container(
+            width: UIConstants.iconSmall,
+            height: UIConstants.iconSmall,
+            decoration: BoxDecoration(
+              color: severityColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: severityColor.withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
-            const SizedBox(width: UIConstants.paddingMedium),
-            const Text(
-              'Severity: ',
-              style: TextStyle(fontSize: UIConstants.fontSizeLarge),
+          ),
+          const SizedBox(width: UIConstants.paddingMedium),
+          Text(
+            'Severity: ',
+            style: TextStyle(fontSize: UIConstants.fontSizeLarge, color: Colors.grey[700]),
+          ),
+          Text(
+            severity,
+            style: TextStyle(
+              fontSize: UIConstants.fontSizeXLarge,
+              fontWeight: FontWeight.w800,
+              color: severityColor,
             ),
-            Text(
-              severity,
-              style: TextStyle(
-                fontSize: UIConstants.fontSizeXLarge,
-                fontWeight: FontWeight.bold,
-                color: severityColor,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildUrgencyCard() {
-    return Card(
-      elevation: 4,
-      color: Colors.orange[50],
-      child: Padding(
-        padding: const EdgeInsets.all(UIConstants.paddingMedium),
-        child: Row(
-          children: [
-            const Icon(Icons.schedule, color: Colors.orange, size: UIConstants.iconXLarge),
-            const SizedBox(width: UIConstants.paddingMedium),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Urgency',
-                    style: TextStyle(
-                      fontSize: UIConstants.fontSizeMedium,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    scanResult.urgency ?? 'Not specified',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+  Widget _buildUrgencyCard(ScanResult scanResult) {
+    return GlassCard(
+      padding: const EdgeInsets.all(UIConstants.paddingMedium),
+      opacity: 0.65,
+      borderColor: const Color(AppColors.orangePrimary).withValues(alpha: 0.2),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(AppColors.orangePrimary).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTreatmentCard() {
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(UIConstants.paddingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
+            child: const Icon(Icons.schedule, color: Color(AppColors.orangePrimary), size: UIConstants.iconXLarge),
+          ),
+          const SizedBox(width: UIConstants.paddingMedium),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.medical_services, color: Colors.green, size: UIConstants.iconMedium),
-                SizedBox(width: UIConstants.spacingMedium),
                 Text(
-                  'Recommended Treatment',
+                  'Urgency',
                   style: TextStyle(
+                    fontSize: UIConstants.fontSizeMedium,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  scanResult.urgency ?? 'Not specified',
+                  style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: UIConstants.paddingMedium),
-            Text(
-              scanResult.treatment ?? 'No treatment recommendation available',
-              style: const TextStyle(fontSize: UIConstants.fontSizeLarge, height: 1.5),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildTreatmentCard(ScanResult scanResult) {
+    return GlassCard(
+      padding: const EdgeInsets.all(UIConstants.paddingMedium),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(AppColors.limeGreen).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
+                ),
+                child: const Icon(Icons.medical_services, color: Color(AppColors.forestGreen), size: UIConstants.iconMedium),
+              ),
+              const SizedBox(width: UIConstants.spacingMedium),
+              Text(
+                'Recommended Treatment',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(AppColors.forestGreen),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: UIConstants.paddingMedium),
+          Text(
+            scanResult.treatment ?? 'No treatment recommendation available',
+            style: const TextStyle(fontSize: UIConstants.fontSizeLarge, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendationCard(ScanResult scanResult) {
+    final severity = scanResult.severity ?? 'low';
+    final disease = scanResult.diseaseName ?? 'healthy';
+    final recommendation = RecommendationEngine.getRecommendation(
+      disease: disease,
+      severity: severity,
+      crop: scanResult.notes?.replaceAll('Crop: ', ''),
+    );
+
+    return GlassCard(
+      padding: const EdgeInsets.all(UIConstants.paddingMedium),
+      opacity: 0.75,
+      borderColor: const Color(AppColors.limeGreen).withValues(alpha: 0.2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lightbulb, color: Color(AppColors.forestGreen), size: UIConstants.iconMedium),
+              const SizedBox(width: UIConstants.spacingMedium),
+              Text(
+                'Smart Recommendations',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(AppColors.forestGreen),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: UIConstants.paddingMedium),
+          Text(
+            recommendation,
+            style: const TextStyle(fontSize: UIConstants.fontSizeMedium, height: 1.6),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReminderButton(ScanResult scanResult) {
+    return ElevatedButton.icon(
+      onPressed: () async {
+        final notificationService = NotificationService();
+        final scheduledDate = DateTime.now().add(const Duration(days: 2));
+        await notificationService.scheduleTreatmentReminder(
+          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          title: 'Treatment Reminder: ${scanResult.diseaseName ?? 'crop'}',
+          body: 'Follow up on your treatment plan. Check your crops for improvement.',
+          scheduledDate: scheduledDate,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Reminder set for ${DateFormat('MMM dd, yyyy').format(scheduledDate)}'),
+              backgroundColor: const Color(AppColors.forestGreen),
+            ),
+          );
+        }
+      },
+      icon: const Icon(Icons.notifications_active, color: Colors.white),
+      label: const Text('Set Treatment Reminder'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(AppColors.forestGreen),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: UIConstants.paddingLarge),
+        textStyle: const TextStyle(fontSize: UIConstants.fontSizeLarge),
+      ),
+    );
+  }
+
+  Widget _buildLocationCard(ScanResult scanResult) {
+    final location = scanResult.location;
+    if (location == null || location.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return GlassCard(
+      padding: const EdgeInsets.all(UIConstants.paddingMedium),
+      opacity: 0.6,
+      child: Row(
+        children: [
+          const Icon(Icons.location_on, color: Color(AppColors.forestGreen), size: UIConstants.iconMedium),
+          const SizedBox(width: UIConstants.paddingMedium),
+          Text(
+            location,
+            style: TextStyle(
+              fontSize: UIConstants.fontSizeMedium,
+              color: const Color(AppColors.forestGreen).withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, ScanResult scanResult) {
     return Row(
       children: [
         Expanded(
@@ -344,7 +522,7 @@ class TreatmentScreen extends StatelessWidget {
             icon: const Icon(Icons.home),
             label: const Text('Home'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+              backgroundColor: const Color(AppColors.forestGreen),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: UIConstants.paddingLarge),
               textStyle: const TextStyle(fontSize: UIConstants.fontSizeLarge),
@@ -366,7 +544,7 @@ class TreatmentScreen extends StatelessWidget {
               icon: const Icon(Icons.map),
               label: const Text('View Heat Map'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: const Color(AppColors.bluePrimary),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: UIConstants.paddingLarge),
                 textStyle: const TextStyle(fontSize: UIConstants.fontSizeLarge),

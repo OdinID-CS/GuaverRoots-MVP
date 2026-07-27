@@ -61,6 +61,12 @@ class ScanResult extends HiveObject {
   @HiveField(18)
   final int? diseasedSections;
 
+  @HiveField(19)
+  final List<Map<String, dynamic>>? heatmapPoints;
+
+  @HiveField(20)
+  final String? location;
+
   ScanResult({
     required this.id,
     required this.imagePath,
@@ -81,7 +87,9 @@ class ScanResult extends HiveObject {
     this.totalSections,
     this.healthySections,
     this.diseasedSections,
-  });
+      this.heatmapPoints,
+      this.location,
+    });
 
   ScanResult copyWith({
     String? id,
@@ -103,6 +111,8 @@ class ScanResult extends HiveObject {
     int? totalSections,
     int? healthySections,
     int? diseasedSections,
+    List<Map<String, dynamic>>? heatmapPoints,
+    String? location,
   }) {
     return ScanResult(
       id: id ?? this.id,
@@ -124,6 +134,8 @@ class ScanResult extends HiveObject {
       totalSections: totalSections ?? this.totalSections,
       healthySections: healthySections ?? this.healthySections,
       diseasedSections: diseasedSections ?? this.diseasedSections,
+      heatmapPoints: heatmapPoints ?? this.heatmapPoints,
+      location: location ?? this.location,
     );
   }
 
@@ -150,6 +162,10 @@ class ScanResult extends HiveObject {
       totalSections: json['total_sections']?.toInt(),
       healthySections: json['healthy_sections']?.toInt(),
       diseasedSections: json['diseased_sections']?.toInt(),
+      heatmapPoints: json['heatmap_points'] != null
+          ? List<Map<String, dynamic>>.from(json['heatmap_points'])
+          : null,
+      location: json['location'],
     );
   }
 
@@ -174,6 +190,8 @@ class ScanResult extends HiveObject {
       'total_sections': totalSections,
       'healthy_sections': healthySections,
       'diseased_sections': diseasedSections,
+      'heatmap_points': heatmapPoints,
+      'location': location,
     };
   }
 }

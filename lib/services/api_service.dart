@@ -1,19 +1,21 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+
+import '../config/api_config.dart';
+import '../core/constants/app_constants.dart';
+import '../core/logging/app_logger.dart';
 import '../models/scan_result.dart';
 import '../models/prediction.dart';
-import '../config/api_config.dart';
-import '../data/mock_disease_data.dart';
-import '../core/logging/app_logger.dart';
-import '../core/constants/app_constants.dart';
-import 'ai/ai_inference_service.dart';
-import 'ai/mock_inference_service.dart';
+
+import 'ai/inference_service.dart';
+import 'ai/tiling_service.dart';
 
 class ApiService extends ChangeNotifier {
   final Dio _dio = Dio();
   bool _isOnline = true;
-  late final AIInferenceService _aiService;
+  late final InferenceService _aiService;
+  late final TilingService _tilingService;
 
   ApiService() {
     _initConnectivity();
@@ -27,9 +29,9 @@ class ApiService extends ChangeNotifier {
   bool get isOnline => _isOnline;
 
   /// Initialize the AI inference service
-  /// Currently uses MockInferenceService, can be swapped for TFLite implementation
   void _initAIService() {
-    _aiService = MockInferenceService();
+    _aiService = InferenceService();
+    _tilingService = TilingService(_aiService);
     _aiService.initialize().then((success) {
       if (success) {
         AppLogger.info('AI service initialized: ${_aiService.serviceName}', tag: 'ApiService');
@@ -48,17 +50,21 @@ class ApiService extends ChangeNotifier {
     });
   }
 
-  Future<ScanResult?> analyzeImage(String imagePath) async {
+  Future<ScanResult?> analyzeImage(String imagePath, {String? location}) async {
     // Try AI inference first (works offline)
     if (_aiService.isReady) {
       try {
         final prediction = await _aiService.analyzeImage(imagePath);
         if (prediction != null) {
           AppLogger.info('AI prediction successful: ${prediction.toString()}', tag: 'ApiService');
-          return _convertPredictionToScanResult(prediction, imagePath, false);
+          return _convertPredictionToScanResult(prediction, imagePath, false, location: location);
         }
       } catch (e) {
-        AppLogger.error('AI inference failed, falling back to API', error: e, tag: 'ApiService');
+        AppLogger.error('AI inference failed', error: e, tag: 'ApiService');
+        // If it's a specific error like "No crop detected", rethrow it to show to user
+        if (e.toString().contains("No supported crop detected") || e.toString().contains("Low confidence")) {
+          rethrow;
+        }
       }
     }
 
@@ -75,100 +81,83 @@ class ApiService extends ChangeNotifier {
         
         if (response.statusCode == 200) {
           AppLogger.apiResponse('POST', ApiConfig.analyzeEndpoint, response.statusCode ?? 0, data: response.data);
-          return ScanResult.fromJson(response.data);
-        } else {
-          AppLogger.apiError('POST', ApiConfig.analyzeEndpoint, 'Unexpected status code', statusCode: response.statusCode);
+          final result = ScanResult.fromJson(response.data);
+          return result.copyWith(location: location);
         }
       } catch (e) {
         AppLogger.apiError('POST', ApiConfig.analyzeEndpoint, e.toString());
       }
     }
 
-    // Final fallback to legacy mock data
-    AppLogger.info('Using legacy mock disease data', tag: 'ApiService');
-    return _getMockResult(imagePath);
+    throw Exception("Analysis failed. Please check your connection or try a clearer image.");
   }
 
-  Future<ScanResult?> analyzeAreaScan(List<String> imagePaths) async {
-    // Try AI inference first (works offline)
+  Future<ScanResult?> analyzeAreaScan(String imagePath, {String? location}) async {
+    // Try AI tiling inference first (works offline)
     if (_aiService.isReady) {
       try {
-        final areaPrediction = await _aiService.analyzeArea(imagePaths);
-        if (areaPrediction != null) {
-          AppLogger.info('AI area prediction successful: ${areaPrediction.toString()}', tag: 'ApiService');
-          return _convertAreaPredictionToScanResult(areaPrediction, imagePaths);
-        }
+        final heatmapPoints = await _tilingService.analyzeArea(imagePath);
+        
+        // Aggregate statistics
+        final totalPoints = heatmapPoints.length;
+        final avgSeverity = heatmapPoints.map((p) => p.severityScore).reduce((a, b) => a + b) / totalPoints;
+        final diseasedCount = heatmapPoints.where((p) => p.severityScore > 0).length;
+        
+        // Find most likely disease (excluding healthy)
+        final diseases = heatmapPoints.where((p) => p.disease != 'Healthy').map((p) => p.disease).toList();
+        final mostLikelyDisease = diseases.isEmpty ? 'Healthy' : _findMostFrequent(diseases);
+
+        final avgConfidence = heatmapPoints.map((p) => p.confidence).reduce((a, b) => a + b) / totalPoints;
+
+        return ScanResult(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          imagePath: imagePath,
+          timestamp: DateTime.now(),
+          isAreaScan: true,
+          heatmapPoints: heatmapPoints.map((p) => p.toJson()).toList(),
+          diseaseName: mostLikelyDisease,
+          confidence: avgConfidence,
+          severity: _mapScoreToSeverity(avgSeverity),
+          totalSections: totalPoints,
+          healthySections: totalPoints - diseasedCount,
+          diseasedSections: diseasedCount,
+          overallSummary: "Area scan completed. Infected area: ${((diseasedCount / totalPoints) * 100).toStringAsFixed(1)}%.",
+          recommendation: _generateRecommendation(mostLikelyDisease, avgSeverity),
+          location: location,
+        );
       } catch (e) {
-        AppLogger.error('AI area inference failed, falling back to API', error: e, tag: 'ApiService');
+        AppLogger.error('Area scan tiling failed', error: e, tag: 'ApiService');
+        rethrow;
       }
     }
 
-    // Fallback to API if online
-    if (_isOnline) {
-      try {
-        AppLogger.apiRequest('POST', ApiConfig.analyzeAreaEndpoint, data: {'fileCount': imagePaths.length});
-        
-        final formData = FormData.fromMap({
-          'files': [
-            for (var path in imagePaths)
-              await MultipartFile.fromFile(path),
-          ],
-        });
+    throw Exception("Area analysis requires offline AI to be initialized.");
+  }
 
-        final response = await _dio.post(ApiConfig.analyzeAreaEndpoint, data: formData);
-        
-        if (response.statusCode == 200) {
-          AppLogger.apiResponse('POST', ApiConfig.analyzeAreaEndpoint, response.statusCode ?? 0, data: response.data);
-          return ScanResult.fromJson(response.data);
-        } else {
-          AppLogger.apiError('POST', ApiConfig.analyzeAreaEndpoint, 'Unexpected status code', statusCode: response.statusCode);
-        }
-      } catch (e) {
-        AppLogger.apiError('POST', ApiConfig.analyzeAreaEndpoint, e.toString());
-      }
+  String _findMostFrequent(List<String> list) {
+    if (list.isEmpty) return 'Unknown';
+    final map = <String, int>{};
+    for (final x in list) {
+      map[x] = (map[x] ?? 0) + 1;
     }
-
-    // Final fallback to legacy mock data
-    AppLogger.info('Using legacy mock disease data for area scan', tag: 'ApiService');
-    return _getMockAreaResult(imagePaths);
+    return map.entries.reduce((a, b) => a.value > b.value ? a : b).key;
   }
 
-  ScanResult _getMockResult(String imagePath) {
-    final disease = MockDiseaseData.getRandomDisease();
-    return ScanResult(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      imagePath: imagePath,
-      timestamp: DateTime.now(),
-      diseaseName: disease.name,
-      confidence: disease.confidence,
-      severity: disease.severity,
-      treatment: disease.treatment,
-      urgency: disease.urgency,
-      description: disease.description,
-      isAreaScan: false,
-    );
+  String _mapScoreToSeverity(double score) {
+    if (score <= 0.0) return 'None';
+    if (score <= 0.25) return 'Low';
+    if (score <= 0.5) return 'Moderate';
+    if (score <= 0.75) return 'High';
+    return 'Severe';
   }
 
-  ScanResult _getMockAreaResult(List<String> imagePaths) {
-    final disease = MockDiseaseData.getRandomDisease();
-    return ScanResult(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      imagePath: imagePaths.first,
-      timestamp: DateTime.now(),
-      diseaseName: disease.name,
-      confidence: disease.confidence,
-      severity: disease.severity,
-      treatment: disease.treatment,
-      urgency: disease.urgency,
-      description: disease.description,
-      isAreaScan: true,
-      areaScanImages: imagePaths,
-    );
+  String _generateRecommendation(String disease, double severity) {
+    if (disease == 'Healthy') return "No treatment needed. Continue regular monitoring.";
+    return "Treat for $disease. Focus on areas marked yellow and red on the heatmap.";
   }
 
   /// Convert AI Prediction to ScanResult for single scan
-  ScanResult _convertPredictionToScanResult(Prediction prediction, String imagePath, bool isAreaScan) {
-    final disease = MockDiseaseData.getDiseaseByName(prediction.disease);
+  ScanResult _convertPredictionToScanResult(Prediction prediction, String imagePath, bool isAreaScan, {String? location}) {
     return ScanResult(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       imagePath: imagePath,
@@ -176,56 +165,9 @@ class ApiService extends ChangeNotifier {
       diseaseName: prediction.disease,
       confidence: prediction.confidence,
       severity: prediction.severity,
-      treatment: disease?.treatment,
-      urgency: disease?.urgency,
-      description: disease?.description,
       isAreaScan: isAreaScan,
-      notes: 'Crop: ${prediction.crop}${prediction.recommendationId != null ? ', Rec ID: ${prediction.recommendationId}' : ''}',
+      notes: 'Crop: ${prediction.crop}',
+      location: location,
     );
-  }
-
-  /// Convert AI AreaPrediction to ScanResult for area scan
-  ScanResult _convertAreaPredictionToScanResult(AreaPrediction areaPrediction, List<String> imagePaths) {
-    // Use the most severe disease from the predictions
-    final mostSeverePrediction = _getMostSeverePrediction(areaPrediction.predictions);
-    final disease = MockDiseaseData.getDiseaseByName(mostSeverePrediction.disease);
-    
-    return ScanResult(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      imagePath: imagePaths.first,
-      timestamp: DateTime.now(),
-      diseaseName: mostSeverePrediction.disease,
-      confidence: mostSeverePrediction.confidence,
-      severity: mostSeverePrediction.severity,
-      treatment: disease?.treatment,
-      urgency: disease?.urgency,
-      description: disease?.description,
-      isAreaScan: true,
-      areaScanImages: imagePaths,
-      notes: 'Overall Health: ${areaPrediction.overallHealth} | Healthy: ${areaPrediction.healthyPercentage.toStringAsFixed(1)}% | Monitor: ${areaPrediction.monitoringPercentage.toStringAsFixed(1)}% | Risk: ${areaPrediction.highRiskPercentage.toStringAsFixed(1)}%',
-    );
-  }
-
-  /// Get the most severe prediction from a list
-  Prediction _getMostSeverePrediction(List<Prediction> predictions) {
-    if (predictions.isEmpty) {
-      // Return a default healthy prediction if list is empty
-      return Prediction(
-        crop: 'unknown',
-        disease: 'Healthy',
-        confidence: 0.95,
-        severity: 'None',
-      );
-    }
-    
-    // Sort by severity (high > moderate > low > none)
-    predictions.sort((a, b) {
-      final severityOrder = {'high': 0, 'moderate': 1, 'low': 2, 'none': 3};
-      final aSeverity = severityOrder[a.severity.toLowerCase()] ?? 4;
-      final bSeverity = severityOrder[b.severity.toLowerCase()] ?? 4;
-      return aSeverity.compareTo(bSeverity);
-    });
-    
-    return predictions.first;
   }
 }

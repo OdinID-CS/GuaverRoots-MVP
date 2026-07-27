@@ -88,18 +88,28 @@ class UIConstants {
   
   // Image Preview
   static const double imagePreviewHeight = 200.0;
-  
+
+  // Glassmorphism
+  static const double glassBlurSigma = 12.0;
+  static const double glassOpacityLight = 0.25;
+  static const double glassOpacityDark = 0.45;
+  static const double glassBorderWidth = 1.0;
+
   // Private constructor to prevent instantiation
   UIConstants._();
 }
 
 /// Color-related constants
 class AppColors {
-  static const int greenPrimary = 0xFF4CAF50;
+  static const int forestGreen = 0xFF1B5E20;
+  static const int limeGreen = 0xFF76FF03;
+  static const int greenPrimary = 0xFF2E7D32;
   static const int bluePrimary = 0xFF2196F3;
   static const int orangePrimary = 0xFFFF9800;
   static const int redPrimary = 0xFFF44336;
-  
+  static const int white = 0xFFFFFFFF;
+  static const int black = 0xFF000000;
+
   // Private constructor to prevent instantiation
   AppColors._();
 }

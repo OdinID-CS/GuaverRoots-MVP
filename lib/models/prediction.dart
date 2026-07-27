@@ -119,9 +119,9 @@ class AreaPrediction {
     }
 
     final total = predictions.length;
-    final healthyPct = total > 0 ? (healthy / total) * 100 : 0;
-    final monitoringPct = total > 0 ? (monitoring / total) * 100 : 0;
-    final highRiskPct = total > 0 ? (highRisk / total) * 100 : 0;
+    final healthyPct = total > 0 ? (healthy / total) * 100 : 0.0;
+    final monitoringPct = total > 0 ? (monitoring / total) * 100 : 0.0;
+    final highRiskPct = total > 0 ? (highRisk / total) * 100 : 0.0;
 
     String overallHealth;
     if (highRiskPct > 30) {
