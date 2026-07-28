@@ -10,6 +10,7 @@ import '../services/ai/tiling_service.dart';
 import '../models/scan_result.dart';
 import '../core/exceptions/app_exceptions.dart';
 import '../core/constants/app_constants.dart';
+import '../utils/image_compressor.dart';
 import '../core/logging/app_logger.dart';
 import '../utils/device_performance.dart';
 import 'heatmap_screen.dart';
@@ -36,6 +37,10 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
           _capturedImages.add(image.path);
         });
         AppLogger.camera('Photo captured for area scan', success: true, details: image.path);
+        final compressedPath = await ImageCompressor.compressImage(image.path);
+        setState(() {
+          _capturedImages.add(compressedPath);
+        });
       }
     } on PermissionException catch (e) {
       AppLogger.permission('Area scan camera blocked', false);
@@ -59,6 +64,10 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
           _capturedImages.add(image.path);
         });
         AppLogger.camera('Image selected from gallery for area scan', success: true, details: image.path);
+        final compressedPath = await ImageCompressor.compressImage(image.path);
+        setState(() {
+          _capturedImages.add(compressedPath);
+        });
       }
     } on PermissionException catch (e) {
       AppLogger.permission('Area scan storage blocked', false);

@@ -8,11 +8,23 @@ class ImagePreprocessorIsolate {
     final receivePort = ReceivePort();
     await Isolate.spawn(
       _preprocessEntry,
-      _PreprocessRequest(imagePath, receivePort.sendPort),
+      _PreprocessRequest(imagePath: imagePath, sendPort: receivePort.sendPort),
     );
 
     final result = await receivePort.first as Float32List;
     return result;
+  }
+
+  static Future<img.Image?> decodeImage(String imagePath) async {
+    final receivePort = ReceivePort();
+    await Isolate.spawn(
+      _decodeEntry,
+      _DecodeRequest(imagePath: imagePath, sendPort: receivePort.sendPort),
+    );
+
+    final result = await receivePort.first;
+    if (result is img.Image) return result;
+    return null;
   }
 
   static void _preprocessEntry(_PreprocessRequest request) {
@@ -47,11 +59,28 @@ class ImagePreprocessorIsolate {
       request.sendPort.send(e);
     }
   }
+
+  static void _decodeEntry(_DecodeRequest request) {
+    try {
+      final bytes = File(request.imagePath).readAsBytesSync();
+      final image = img.decodeImage(bytes);
+      request.sendPort.send(image);
+    } catch (e) {
+      request.sendPort.send(null);
+    }
+  }
 }
 
 class _PreprocessRequest {
   final String imagePath;
   final SendPort sendPort;
 
-  _PreprocessRequest(this.imagePath, this.sendPort);
+  _PreprocessRequest({required this.imagePath, required this.sendPort});
+}
+
+class _DecodeRequest {
+  final String imagePath;
+  final SendPort sendPort;
+
+  _DecodeRequest({required this.imagePath, required this.sendPort});
 }
