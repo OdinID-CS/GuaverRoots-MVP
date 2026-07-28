@@ -1,5 +1,6 @@
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import '../../models/prediction.dart';
 import '../../core/logging/app_logger.dart';
 import 'ai_inference_service.dart';
@@ -14,18 +15,32 @@ class InferenceService implements AIInferenceService {
 
   @override
   Future<bool> initialize() async {
-    _interpreter = await ModelLoader.loadInterpreter();
+    final interpreter = await ModelLoader.loadInterpreter();
     _labels = await ModelLoader.loadLabels();
 
-    if (_interpreter != null && _labels.isNotEmpty) {
+    if (interpreter != null && _labels.isNotEmpty) {
+      _interpreter = interpreter;
+      await _warmUp();
       _isInitialized = true;
       AppLogger.info('InferenceService initialized with ${_labels.length} labels');
       return true;
     }
 
+    _interpreter = null;
     _isInitialized = false;
     AppLogger.error('InferenceService failed to initialize');
     return false;
+  }
+
+  Future<void> _warmUp() async {
+    try {
+      final dummyInput = Float32List(224 * 224 * 3);
+      final output = List.filled(_labels.length, 0.0).reshape([1, _labels.length]);
+      _interpreter!.run(dummyInput, output);
+      AppLogger.info('Interpreter warmed up successfully');
+    } catch (e) {
+      AppLogger.warning('Interpreter warm-up failed', tag: 'InferenceService', error: e);
+    }
   }
 
   @override
@@ -120,6 +135,7 @@ class InferenceService implements AIInferenceService {
   @override
   Future<void> dispose() async {
     _interpreter?.close();
+    _interpreter = null;
     _isInitialized = false;
   }
 }

@@ -54,4 +54,30 @@ class ImagePreprocessor {
     }
     return input;
   }
+
+  static bool isLikelyCropTile(img.Image tile, {double varianceThreshold = 10.0}) {
+    final gray = List<double>.filled(tile.width * tile.height, 0.0);
+    for (var y = 0; y < tile.height; y++) {
+      for (var x = 0; x < tile.width; x++) {
+        final pixel = tile.getPixel(x, y);
+        gray[y * tile.width + x] = (pixel.r + pixel.g + pixel.b) / 3.0;
+      }
+    }
+
+    if (gray.isEmpty) return false;
+
+    final mean = gray.reduce((a, b) => a + b) / gray.length;
+    final variance = gray.map((v) => (v - mean) * (v - mean)).reduce((a, b) => a + b) / gray.length;
+
+    return variance > varianceThreshold;
+  }
+
+  static bool isLikelyCropTileFromPath(String imagePath, int x, int y, int width, int height, {double varianceThreshold = 10.0}) {
+    final bytes = File(imagePath).readAsBytesSync();
+    final image = img.decodeImage(bytes);
+    if (image == null) return true;
+
+    final tile = img.copyCrop(image, x: x, y: y, width: width, height: height);
+    return isLikelyCropTile(tile, varianceThreshold: varianceThreshold);
+  }
 }

@@ -3,6 +3,7 @@ import 'image_preprocessor.dart';
 import '../../core/logging/app_logger.dart';
 import '../../utils/device_performance.dart';
 import 'dart:typed_data';
+import 'package:image/image.dart' as img;
 import '../../utils/image_preprocessor_isolate.dart';
 
 class HeatmapPoint {
@@ -76,6 +77,12 @@ class TilingService {
 
       for (final tile in batch) {
         try {
+          final tileImage = img.copyCrop(originalImage, x: tile.x, y: tile.y, width: tileSize, height: tileSize);
+          if (!ImagePreprocessor.isLikelyCropTile(tileImage)) {
+            AppLogger.info('Skipping background tile', tag: 'TilingService');
+            continue;
+          }
+
           final input = ImagePreprocessor.preprocessTile(originalImage, tile.x, tile.y, tileSize, tileSize);
           final prediction = await _inferenceService.analyzePreprocessed(input);
 
