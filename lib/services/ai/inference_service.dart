@@ -4,7 +4,7 @@ import '../../models/prediction.dart';
 import '../../core/logging/app_logger.dart';
 import 'ai_inference_service.dart';
 import 'model_loader.dart';
-import 'image_preprocessor.dart';
+import '../../utils/image_preprocessor_isolate.dart';
 import 'prediction_parser.dart';
 
 class InferenceService implements AIInferenceService {
@@ -36,7 +36,7 @@ class InferenceService implements AIInferenceService {
     }
 
     try {
-      final input = ImagePreprocessor.preprocess(imagePath);
+      final input = await ImagePreprocessorIsolate.preprocess(imagePath);
       final output = List.filled(_labels.length, 0.0).reshape([1, _labels.length]);
 
       _interpreter!.run(input, output);

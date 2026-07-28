@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/constants/app_constants.dart';
@@ -14,7 +13,6 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _logoController;
   late AnimationController _textController;
-  late AnimationController _particleController;
   late AnimationController _pulseController;
 
   late Animation<double> _logoScale;
@@ -23,27 +21,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late Animation<double> _textFade;
   late Animation<double> _pulseScale;
 
-  final List<_FloatingParticle> _particles = [];
-  final Random _random = Random();
-
   @override
   void initState() {
     super.initState();
-    _createParticles();
     _initAnimations();
     _startSequence();
-  }
-
-  void _createParticles() {
-    for (int i = 0; i < 18; i++) {
-      _particles.add(_FloatingParticle(
-        x: _random.nextDouble(),
-        y: _random.nextDouble(),
-        size: 4 + _random.nextDouble() * 10,
-        speed: 0.3 + _random.nextDouble() * 0.8,
-        delay: _random.nextDouble() * 1.2,
-      ));
-    }
   }
 
   void _initAnimations() {
@@ -56,11 +38,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-
-    _particleController = AnimationController(
-      duration: const Duration(milliseconds: 2500),
-      vsync: this,
-    )..repeat();
 
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1800),
@@ -124,7 +101,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void dispose() {
     _logoController.dispose();
     _textController.dispose();
-    _particleController.dispose();
     _pulseController.dispose();
     super.dispose();
   }
@@ -145,38 +121,18 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             stops: [0.0, 0.55, 1.0],
           ),
         ),
-        child: Stack(
-          children: [
-            _buildParticles(),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildLogo(),
-                  const SizedBox(height: 28),
-                  _buildTexts(),
-                  const SizedBox(height: 320),
-                ],
-              ),
-            ),
-          ],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildLogo(),
+              const SizedBox(height: 28),
+              _buildTexts(),
+              const SizedBox(height: 320),
+            ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildParticles() {
-    return AnimatedBuilder(
-      animation: _particleController,
-      builder: (context, child) {
-        return CustomPaint(
-          size: MediaQuery.of(context).size,
-          painter: _ParticlePainter(
-            particles: _particles,
-            progress: _particleController.value,
-          ),
-        );
-      },
     );
   }
 
@@ -262,47 +218,4 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       },
     );
   }
-}
-
-class _FloatingParticle {
-  final double x;
-  final double y;
-  final double size;
-  final double speed;
-  final double delay;
-
-  _FloatingParticle({
-    required this.x,
-    required this.y,
-    required this.size,
-    required this.speed,
-    required this.delay,
-  });
-}
-
-class _ParticlePainter extends CustomPainter {
-  final List<_FloatingParticle> particles;
-  final double progress;
-
-  _ParticlePainter({required this.particles, required this.progress});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    for (final p in particles) {
-      final t = (progress * (1.0 + p.speed) + p.delay) % 1.0;
-      final dy = (p.y - t) * 1.4;
-      final dx = p.x + sin(t * 2 * pi) * 0.06;
-      final opacity = (1.0 - t) * 0.55;
-
-      final center = Offset(dx * size.width, dy * size.height);
-      paint.color = const Color(AppColors.limeGreen).withValues(alpha: opacity);
-
-      canvas.drawCircle(center, p.size * (0.6 + t * 0.4), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ParticlePainter oldDelegate) => true;
 }

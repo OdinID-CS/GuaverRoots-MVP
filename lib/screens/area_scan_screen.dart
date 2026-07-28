@@ -11,6 +11,7 @@ import '../models/scan_result.dart';
 import '../core/exceptions/app_exceptions.dart';
 import '../core/constants/app_constants.dart';
 import '../core/logging/app_logger.dart';
+import '../utils/device_performance.dart';
 import 'heatmap_screen.dart';
 
 class AreaScanScreen extends StatefulWidget {
@@ -24,12 +25,13 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
   final List<String> _capturedImages = [];
   final ImagePicker _picker = ImagePicker();
   bool _isAnalyzing = false;
+  late final int _maxAreaPhotos = DevicePerformance.detect().maxAreaPhotos;
 
   Future<void> _capturePhoto() async {
     try {
       await PermissionService.requestCamera();
       final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-      if (image != null && _capturedImages.length < AppConstants.maxAreaPhotos) {
+      if (image != null && _capturedImages.length < _maxAreaPhotos) {
         setState(() {
           _capturedImages.add(image.path);
         });
@@ -52,7 +54,7 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
     try {
       await PermissionService.requestStorage();
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-      if (image != null && _capturedImages.length < AppConstants.maxAreaPhotos) {
+      if (image != null && _capturedImages.length < _maxAreaPhotos) {
         setState(() {
           _capturedImages.add(image.path);
         });
@@ -370,9 +372,9 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: _capturedImages.length < AppConstants.maxAreaPhotos ? _showPhotoOptions : null,
+                                onPressed: _capturedImages.length < _maxAreaPhotos ? _showPhotoOptions : null,
                                 icon: const Icon(Icons.add_photo_alternate),
-                                label: Text(_capturedImages.length < AppConstants.maxAreaPhotos ? 'Add More' : 'Max 9 Photos'),
+                                label: Text(_capturedImages.length < _maxAreaPhotos ? 'Add More' : 'Max $_maxAreaPhotos Photos'),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: Colors.green,
                                   padding: const EdgeInsets.symmetric(vertical: 16),

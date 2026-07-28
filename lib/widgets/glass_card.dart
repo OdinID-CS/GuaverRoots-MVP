@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../core/constants/app_constants.dart';
+import '../utils/device_performance.dart';
 
 class GlassCard extends StatelessWidget {
   final Widget child;
@@ -26,6 +27,12 @@ class GlassCard extends StatelessWidget {
     this.onTap,
   });
 
+  static PerformanceMode _currentMode = DevicePerformance.detect();
+
+  static void refreshPerformanceMode() {
+    _currentMode = DevicePerformance.detect();
+  }
+
   @override
   Widget build(BuildContext context) {
     final effectiveBorder = borderColor ??
@@ -39,14 +46,19 @@ class GlassCard extends StatelessWidget {
       ),
     ];
 
+    final effectiveBlur = _currentMode.enableBlur ? blurSigma : _currentMode.blurSigma;
+    final effectiveOpacity = _currentMode == PerformanceMode.low && opacity == UIConstants.glassOpacityLight
+        ? UIConstants.glassOpacityDark
+        : opacity;
+
     final content = ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+        filter: ImageFilter.blur(sigmaX: effectiveBlur, sigmaY: effectiveBlur),
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: opacity),
+            color: Colors.white.withValues(alpha: effectiveOpacity),
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
               color: effectiveBorder,
