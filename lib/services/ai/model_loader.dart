@@ -6,9 +6,21 @@ class ModelLoader {
   static const String _modelPath = 'assets/models/crop_disease_model.tflite';
   static const String _labelsPath = 'assets/labels/labels.txt';
 
-  static Future<Interpreter?> loadInterpreter() async {
+  static Future<Interpreter?> loadInterpreter({bool useGpu = false}) async {
     try {
-      final interpreter = await Interpreter.fromAsset(_modelPath);
+      final interpreterOptions = InterpreterOptions();
+
+      if (useGpu) {
+        try {
+          final gpuDelegate = GpuDelegateV2();
+          interpreterOptions.addDelegate(gpuDelegate);
+          AppLogger.info('Using GPU delegate for TFLite inference');
+        } catch (e) {
+          AppLogger.warning('GPU delegate not available, falling back to CPU', tag: 'ModelLoader', error: e);
+        }
+      }
+
+      final interpreter = await Interpreter.fromAsset(_modelPath, options: interpreterOptions);
       AppLogger.info('TFLite Model loaded successfully from $_modelPath');
       return interpreter;
     } catch (e) {
