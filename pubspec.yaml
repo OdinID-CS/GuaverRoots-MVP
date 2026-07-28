@@ -10,6 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
   
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+  
   # UI
   cupertino_icons: ^1.0.6
   google_fonts: ^6.1.0
@@ -39,11 +43,14 @@ dependencies:
   tflite_flutter: ^0.12.1
 
   # Utils
-  intl: ^0.18.1
+  intl: ^0.20.2
 
   # Notifications
   flutter_local_notifications: ^17.0.0
   timezone: ^0.9.3
+
+  # Voice
+  flutter_tts: ^3.8.5
 
 dev_dependencies:
   flutter_test:

@@ -1,12 +1,15 @@
+import 'feedback_service.dart';
+
 class RecommendationEngine {
   static String getRecommendation({
     required String disease,
     required String severity,
     String? crop,
     String? weatherRisk,
+    FarmProfile? farmProfile,
   }) {
-    final normalizedDisease = (disease.trim().toLowerCase());
-    final normalizedSeverity = (severity.trim().toLowerCase());
+    final normalizedDisease = disease.trim().toLowerCase();
+    final normalizedSeverity = severity.trim().toLowerCase();
 
     if (normalizedDisease == 'healthy' || normalizedDisease.contains('healthy')) {
       return _buildHealthyRecommendation(crop, weatherRisk);
@@ -15,7 +18,7 @@ class RecommendationEngine {
     final treatment = _getTreatmentForDisease(normalizedDisease, normalizedSeverity);
     final urgency = _getUrgency(normalizedSeverity);
     final preventive = _getPreventiveMeasures(normalizedDisease);
-    final monitoring = _getMonitoringAdvice(normalizedSeverity, weatherRisk);
+    final monitoring = _getMonitoringAdvice(normalizedSeverity, weatherRisk, farmProfile);
 
     return '$treatment\n\n$urgency\n\n$preventive\n\n$monitoring';
   }
@@ -90,17 +93,21 @@ class RecommendationEngine {
     return 'Prevention: Practice crop rotation, maintain field hygiene, and monitor plants regularly for early signs of disease.';
   }
 
-  static String _getMonitoringAdvice(String severity, String? weatherRisk) {
+  static String _getMonitoringAdvice(String severity, String? weatherRisk, FarmProfile? farmProfile) {
     String advice = 'Monitor: Check affected plants every 2-3 days. Take additional photos to track progression.';
-    
+
     if (weatherRisk != null && (weatherRisk.contains('high') || weatherRisk.contains('High'))) {
       advice += '\n\nWeather alert: High disease risk conditions detected. Increase inspection frequency and consider preventive spraying.';
     }
-    
+
+    if (farmProfile != null && farmProfile.accuracy < 0.7 && farmProfile.totalScans > 3) {
+      advice += '\n\nLocal note: Our previous predictions at this location had mixed results. Consider confirming with an extension officer.';
+    }
+
     if (severity == 'high' || severity == 'severe') {
       advice += '\n\nFollow-up: Re-evaluate treatment effectiveness in 5-7 days. If condition worsens, consult an agricultural extension officer.';
     }
-    
+
     return advice;
   }
 }

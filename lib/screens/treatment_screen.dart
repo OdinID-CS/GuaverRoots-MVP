@@ -7,6 +7,7 @@ import '../services/recommendation_engine.dart';
 import '../services/notification_service.dart';
 import 'heatmap_screen.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/feedback_dialog.dart';
 
 class TreatmentScreen extends StatefulWidget {
   final ScanResult scanResult;
@@ -21,7 +22,6 @@ class _TreatmentScreenState extends State<TreatmentScreen> {
   @override
   Widget build(BuildContext context) {
     final scanResult = widget.scanResult;
-
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -514,43 +514,67 @@ class _TreatmentScreenState extends State<TreatmentScreen> {
   }
 
   Widget _buildActionButtons(BuildContext context, ScanResult scanResult) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.home),
+                label: const Text('Home'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(AppColors.forestGreen),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: UIConstants.paddingLarge),
+                  textStyle: const TextStyle(fontSize: UIConstants.fontSizeLarge),
+                ),
+              ),
+            ),
+            const SizedBox(width: UIConstants.paddingMedium),
+            if (scanResult.isAreaScan)
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HeatmapScreen(scanResult: scanResult),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.map),
+                  label: const Text('View Heat Map'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(AppColors.bluePrimary),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: UIConstants.paddingLarge),
+                    textStyle: const TextStyle(fontSize: UIConstants.fontSizeLarge),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: UIConstants.paddingMedium),
+        SizedBox(
+          width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.home),
-            label: const Text('Home'),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => FeedbackDialog(scanResult: scanResult),
+              );
+            },
+            icon: const Icon(Icons.feedback, color: Colors.white),
+            label: const Text('Feedback'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(AppColors.forestGreen),
+              backgroundColor: const Color(AppColors.orangePrimary),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: UIConstants.paddingLarge),
               textStyle: const TextStyle(fontSize: UIConstants.fontSizeLarge),
             ),
           ),
         ),
-        const SizedBox(width: UIConstants.paddingMedium),
-        if (scanResult.isAreaScan)
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => HeatmapScreen(scanResult: scanResult),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.map),
-              label: const Text('View Heat Map'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(AppColors.bluePrimary),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: UIConstants.paddingLarge),
-                textStyle: const TextStyle(fontSize: UIConstants.fontSizeLarge),
-              ),
-            ),
-          ),
       ],
     );
   }

@@ -8,6 +8,7 @@ import 'dashboard_screen.dart';
 import '../services/weather_service.dart';
 import '../models/weather_data.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/language_switcher.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -51,27 +52,34 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text(
-          'GuaverRoots',
-          style: GoogleFonts.poppins(
-            fontSize: UIConstants.fontSizeXXXLarge,
-            fontWeight: FontWeight.w800,
-            color: const Color(AppColors.forestGreen),
-            letterSpacing: 0.8,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'GuaverRoots',
+                style: GoogleFonts.poppins(
+                  fontSize: UIConstants.fontSizeXXXLarge,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(AppColors.forestGreen),
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: UIConstants.spacingSmall),
+              Text(
+                'Crop Health Assistant',
+                style: GoogleFonts.poppins(
+                  fontSize: UIConstants.fontSizeXLarge,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(AppColors.forestGreen).withValues(alpha: 0.75),
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: UIConstants.spacingSmall),
-        Text(
-          'Crop Health Assistant',
-          style: GoogleFonts.poppins(
-            fontSize: UIConstants.fontSizeXLarge,
-            fontWeight: FontWeight.w500,
-            color: const Color(AppColors.forestGreen).withValues(alpha: 0.75),
-          ),
-        ),
+        const LanguageSwitcher(),
       ],
     );
   }
