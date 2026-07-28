@@ -55,20 +55,18 @@ class _ScanScreenState extends State<ScanScreen> {
     } on PermissionException catch (e) {
       AppLogger.permission('Camera initialization blocked', false);
       AppLogger.error('Camera initialization blocked', error: e, tag: 'ScanScreen');
-      if (mounted) {
-        setState(() {
-          _isInitialized = true;
-          _errorMessage = e.message;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _isInitialized = true;
+        _errorMessage = e.message;
+      });
     } catch (e) {
       AppLogger.camera('Camera initialization', success: false, details: e.toString());
-      if (mounted) {
-        setState(() {
-          _isInitialized = true;
-          _errorMessage = 'Failed to initialize camera. Please check permissions.';
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _isInitialized = true;
+        _errorMessage = 'Failed to initialize camera. Please check permissions.';
+      });
     }
   }
 
