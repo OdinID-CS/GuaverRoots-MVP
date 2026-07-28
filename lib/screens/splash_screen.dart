@@ -128,7 +128,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               _buildLogo(),
               const SizedBox(height: 28),
               _buildTexts(),
-              const SizedBox(height: 320),
             ],
           ),
         ),
