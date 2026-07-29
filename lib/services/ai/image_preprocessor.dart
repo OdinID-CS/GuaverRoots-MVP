@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
+import 'package:tflite_flutter/tflite_flutter.dart';
 
 class ImagePreprocessor {
   static const int inputSize = 224;
 
-  static Float32List preprocess(String imagePath) {
+  static List preprocess(String imagePath) {
     final bytes = File(imagePath).readAsBytesSync();
     final image = img.decodeImage(bytes);
 
@@ -29,11 +30,11 @@ class ImagePreprocessor {
         input[bufferIndex++] = pixel.b / 255.0;
       }
     }
-    return input;
+    return input.reshape([1, inputSize, inputSize, 3]);
   }
 
   /// Extracts a tile from an image and preproccesses it
-  static Float32List preprocessTile(img.Image originalImage, int x, int y, int width, int height) {
+  static List preprocessTile(img.Image originalImage, int x, int y, int width, int height) {
     final tile = img.copyCrop(originalImage, x: x, y: y, width: width, height: height);
     final resizedTile = img.copyResize(
       tile,
@@ -52,7 +53,7 @@ class ImagePreprocessor {
         input[bufferIndex++] = pixel.b / 255.0;
       }
     }
-    return input;
+    return input.reshape([1, inputSize, inputSize, 3]);
   }
 
   static bool isLikelyCropTile(img.Image tile, {double varianceThreshold = 10.0}) {

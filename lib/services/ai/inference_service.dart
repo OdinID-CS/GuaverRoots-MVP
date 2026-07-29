@@ -34,7 +34,7 @@ class InferenceService implements AIInferenceService {
 
   Future<void> _warmUp() async {
     try {
-      final dummyInput = Float32List(224 * 224 * 3);
+     final dummyInput = Float32List(224 * 224 * 3).reshape([1, 224, 224, 3]);
       final output = List.filled(_labels.length, 0.0).reshape([1, _labels.length]);
       _interpreter!.run(dummyInput, output);
       AppLogger.info('Interpreter warmed up successfully');
@@ -51,10 +51,11 @@ class InferenceService implements AIInferenceService {
     }
 
     try {
-      final input = await ImagePreprocessorIsolate.preprocess(imagePath);
-      final output = List.filled(_labels.length, 0.0).reshape([1, _labels.length]);
+     final input = await ImagePreprocessorIsolate.preprocess(imagePath);
+           final reshapedInput = input.reshape([1, 224, 224, 3]);
+           final output = List.filled(_labels.length, 0.0).reshape([1, _labels.length]);
 
-      _interpreter!.run(input, output);
+           _interpreter!.run(reshapedInput, output);
 
       final results = output[0] as List<double>;
       final maxConfidence = results.reduce(math.max);
@@ -94,8 +95,9 @@ class InferenceService implements AIInferenceService {
     }
 
     try {
-      final output = List.filled(_labels.length, 0.0).reshape([1, _labels.length]);
-      _interpreter!.run(input, output);
+      final reshapedInput = (input as List).reshape([1, 224, 224, 3]);
+            final output = List.filled(_labels.length, 0.0).reshape([1, _labels.length]);
+            _interpreter!.run(reshapedInput, output);
 
       final results = output[0] as List<double>;
       final maxConfidence = results.reduce(math.max);
