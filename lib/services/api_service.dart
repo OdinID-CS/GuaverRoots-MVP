@@ -160,8 +160,32 @@ class ApiService extends ChangeNotifier {
   }
 
   String _generateRecommendation(String disease, double severity) {
-    if (disease == 'Healthy') return "No treatment needed. Continue regular monitoring.";
-    return "Treat for $disease. Focus on areas marked yellow and red on the heatmap.";
+    if (disease == 'Healthy' || disease.toLowerCase().contains('healthy')) {
+      return "No treatment needed. Continue regular monitoring, proper watering, and fertilization practices.";
+    }
+    final d = disease.toLowerCase();
+    if (d.contains('wilt')) {
+      return "Remove infected plants immediately. Solarize soil before replanting. Use resistant varieties and rotate crops.";
+    }
+    if (d.contains('mosaic') || d.contains('virus')) {
+      return "No cure available. Remove and destroy infected plants. Control aphid/whitefly vectors. Use virus-free planting material.";
+    }
+    if (d.contains('blight')) {
+      return "Apply copper-based fungicide immediately. Remove all infected plant material. Avoid overhead irrigation.";
+    }
+    if (d.contains('mite') || d.contains('green mite') || d.contains('whitefly')) {
+      return "Apply acaricide or insecticidal soap. Spray with neem oil. Remove heavily infested leaves.";
+    }
+    if (d.contains('anthracnose')) {
+      return "Apply chlorothalonil or copper fungicide. Remove and destroy infected plant material. Avoid overhead irrigation.";
+    }
+    if (d.contains('nematode') || d.contains('cock')) {
+      return "Apply nematicide to soil. Rotate with non-host crops. Remove and destroy heavily infected tubers.";
+    }
+    if (d.contains('damping off') || d.contains('damping')) {
+      return "Improve drainage and reduce soil moisture. Apply copper-based fungicide to soil. Use treated seeds.";
+    }
+    return "Treat for $disease. Focus on areas marked yellow and red on the heatmap. Consult local agricultural extension for specific advice.";
   }
 
   /// Convert AI Prediction to ScanResult for single scan
