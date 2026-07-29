@@ -45,11 +45,10 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
     } on PermissionException catch (e) {
       AppLogger.permission('Area scan camera blocked', false);
       AppLogger.error('Area scan camera blocked', error: e, tag: 'AreaScanScreen');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
     } catch (e) {
       AppLogger.camera('Photo capture for area scan', success: false, details: e.toString());
     }
@@ -72,11 +71,10 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
     } on PermissionException catch (e) {
       AppLogger.permission('Area scan storage blocked', false);
       AppLogger.error('Area scan storage blocked', error: e, tag: 'AreaScanScreen');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
     } catch (e) {
       AppLogger.camera('Gallery selection for area scan', success: false, details: e.toString());
     }
