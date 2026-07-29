@@ -90,12 +90,12 @@ class _ScanScreenState extends State<ScanScreen> {
     try {
       final image = await _controller!.takePicture();
       AppLogger.camera('Picture captured', success: true, details: image.path);
-      
-      final location = await _getCurrentLocation();
-      
+
       final compressedPath = await ImageCompressor.compressImage(image.path);
       AppLogger.info('Image compressed');
-      
+
+      final location = await _getCurrentLocation();
+
       await _analyzeImage(compressedPath, location: location);
     } catch (e) {
       AppLogger.camera('Picture capture', success: false, details: e.toString());
@@ -118,12 +118,12 @@ class _ScanScreenState extends State<ScanScreen> {
           _isOfflineMode = false;
           _errorMessage = null;
         });
-        
-        final location = await _getCurrentLocation();
-        
+
         final compressedPath = await ImageCompressor.compressImage(image.path);
         AppLogger.info('Image compressed');
-        
+
+        final location = await _getCurrentLocation();
+
         await _analyzeImage(compressedPath, location: location);
       }
     } catch (e) {
@@ -143,15 +143,18 @@ class _ScanScreenState extends State<ScanScreen> {
       if (permission == LocationPermission.denied) {
         await Geolocator.requestPermission();
       }
-      
+
       if (permission == LocationPermission.deniedForever) {
         return null;
       }
 
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
+      ).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw Exception("Location fetch timed out"),
       );
-      
+
       return '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
     } catch (e) {
       AppLogger.warning('Unable to get current location', tag: 'ScanScreen', error: e.toString());
@@ -161,7 +164,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Future<void> _analyzeImage(String imagePath, {String? location}) async {
     final apiService = Provider.of<ApiService>(context, listen: false);
-    
+
     setState(() {
       _isOfflineMode = !apiService.isOnline;
     });
@@ -170,14 +173,19 @@ class _ScanScreenState extends State<ScanScreen> {
 
     if (result != null && mounted) {
       await StorageService.saveScanResult(result);
-      
+
       if (mounted) {
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => TreatmentScreen(scanResult: result),
           ),
         );
+        if (mounted) {
+          setState(() {
+            _isAnalyzing = false;
+          });
+        }
       }
     } else if (mounted) {
       setState(() {

@@ -20,6 +20,7 @@ import 'core/constants/app_constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
   
   // Initialize Hive for local storage
   await Hive.initFlutter();

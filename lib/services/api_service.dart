@@ -16,6 +16,7 @@ class ApiService extends ChangeNotifier {
   bool _isOnline = true;
   late final InferenceService _aiService;
   late final TilingService _tilingService;
+  Future<bool>? _aiInitFuture;
 
   ApiService() {
     _initConnectivity();
@@ -32,12 +33,13 @@ class ApiService extends ChangeNotifier {
   void _initAIService() {
     _aiService = InferenceService();
     _tilingService = TilingService(_aiService);
-    _aiService.initialize().then((success) {
+    _aiInitFuture = _aiService.initialize().then((success) {
       if (success) {
         AppLogger.info('AI service initialized: ${_aiService.serviceName}', tag: 'ApiService');
       } else {
         AppLogger.warning('AI service initialization failed', tag: 'ApiService');
       }
+      return success;
     });
   }
 
@@ -51,6 +53,9 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<ScanResult?> analyzeImage(String imagePath, {String? location}) async {
+    // Make sure AI setup has finished before checking if it's ready
+    if (_aiInitFuture != null) await _aiInitFuture;
+
     // Try AI inference first (works offline)
     if (_aiService.isReady) {
       try {
@@ -72,13 +77,13 @@ class ApiService extends ChangeNotifier {
     if (_isOnline) {
       try {
         AppLogger.apiRequest('POST', ApiConfig.analyzeEndpoint);
-        
+
         final formData = FormData.fromMap({
           'file': await MultipartFile.fromFile(imagePath),
         });
 
         final response = await _dio.post(ApiConfig.analyzeEndpoint, data: formData);
-        
+
         if (response.statusCode == 200) {
           AppLogger.apiResponse('POST', ApiConfig.analyzeEndpoint, response.statusCode ?? 0, data: response.data);
           final result = ScanResult.fromJson(response.data);
@@ -93,16 +98,19 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<ScanResult?> analyzeAreaScan(String imagePath, {String? location}) async {
+    // Make sure AI setup has finished before checking if it's ready
+    if (_aiInitFuture != null) await _aiInitFuture;
+
     // Try AI tiling inference first (works offline)
     if (_aiService.isReady) {
       try {
         final heatmapPoints = await _tilingService.analyzeArea(imagePath);
-        
+
         // Aggregate statistics
         final totalPoints = heatmapPoints.length;
         final avgSeverity = heatmapPoints.map((p) => p.severityScore).reduce((a, b) => a + b) / totalPoints;
         final diseasedCount = heatmapPoints.where((p) => p.severityScore > 0).length;
-        
+
         // Find most likely disease (excluding healthy)
         final diseases = heatmapPoints.where((p) => p.disease != 'Healthy').map((p) => p.disease).toList();
         final mostLikelyDisease = diseases.isEmpty ? 'Healthy' : _findMostFrequent(diseases);

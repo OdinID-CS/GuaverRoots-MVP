@@ -43,7 +43,7 @@ class TilingService {
 
   TilingService(this._inferenceService);
 
-  Future<List<HeatmapPoint>> analyzeArea(String imagePath, {PerformanceMode? mode}) async {
+ Future<List<HeatmapPoint>> analyzeArea(String imagePath, {PerformanceMode? mode}) async {
     final performanceMode = mode ?? DevicePerformance.detect();
     AppLogger.info('Starting tiling analysis for $imagePath in ${performanceMode.name} mode');
 
@@ -115,12 +115,13 @@ class TilingService {
   }
 
   Future<Float32List> preprocessTileInput(String imagePath, int x, int y, int width, int height) async {
-    final image = await ImagePreprocessorIsolate.decodeImage(imagePath);
+      final image = await ImagePreprocessorIsolate.decodeImage(imagePath);
 
-    if (image == null) throw Exception("Failed to decode image for tiling");
+      if (image == null) throw Exception("Failed to decode image for tiling");
 
-    return ImagePreprocessor.preprocessTile(image, x, y, width, height);
-  }
+      final raw = ImagePreprocessor.preprocessTile(image, x, y, width, height);
+      return Float32List.fromList(raw.cast<double>());
+    }
 
   double _mapSeverityToScore(String severity) {
     switch (severity.toLowerCase()) {
