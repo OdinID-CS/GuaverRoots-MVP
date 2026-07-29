@@ -162,10 +162,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.eco_outlined,
-                size: 80,
-                color: Color(AppColors.limeGreen),
+              child: Image.asset(
+                'assets/icons/GuaverRootsLogo-removebg-preview.png',
+                width: 80,
+                height: 80,
+                fit: BoxFit.contain,
               ),
             ),
           ),
