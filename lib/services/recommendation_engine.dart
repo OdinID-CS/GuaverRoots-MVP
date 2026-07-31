@@ -111,9 +111,16 @@ class RecommendationEngine {
   static String _getMonitoringAdvice(String severity, String? weatherRisk, FarmProfile? farmProfile) {
     String advice = 'Monitor: Check affected plants every 2-3 days. Take additional photos to track progression.';
 
-    if (weatherRisk != null && (weatherRisk.contains('high') || weatherRisk.contains('High'))) {
-      advice += '\n\nWeather alert: High disease risk conditions detected. Increase inspection frequency and consider preventive spraying.';
-    }
+    if (weatherRisk != null) {
+          final riskLower = weatherRisk.toLowerCase();
+          if (riskLower == 'high') {
+            advice += '\n\nWeather alert: High disease risk conditions detected. Increase inspection frequency and consider preventive spraying.';
+          } else if (riskLower == 'moderate') {
+            advice += '\n\nWeather note: Moderate disease risk conditions. Keep monitoring humidity and rainfall, as spread can accelerate quickly.';
+          } else {
+            advice += '\n\nWeather note: Current conditions are low risk for disease spread.';
+          }
+        }
 
     if (farmProfile != null && farmProfile.accuracy < 0.7 && farmProfile.totalScans > 3) {
       advice += '\n\nLocal note: Our previous predictions at this location had mixed results. Consider confirming with an extension officer.';

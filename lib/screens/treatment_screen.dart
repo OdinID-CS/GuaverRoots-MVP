@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
 import '../models/scan_result.dart';
+import '../models/weather_data.dart';
 import '../core/constants/app_constants.dart';
 import '../services/recommendation_engine.dart';
 import '../services/notification_service.dart';
+import '../services/weather_service.dart';
 import 'heatmap_screen.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/feedback_dialog.dart';
@@ -109,10 +111,6 @@ class _TreatmentScreenState extends State<TreatmentScreen> {
                     _buildConfidenceCard(scanResult),
                     const SizedBox(height: UIConstants.spacingLarge),
                     _buildSeverityCard(scanResult),
-                    const SizedBox(height: UIConstants.spacingLarge),
-                    _buildUrgencyCard(scanResult),
-                    const SizedBox(height: UIConstants.spacingLarge),
-                    _buildTreatmentCard(scanResult),
                     const SizedBox(height: UIConstants.spacingXLarge),
                     _buildRecommendationCard(scanResult),
                     const SizedBox(height: UIConstants.spacingLarge),
@@ -336,127 +334,59 @@ class _TreatmentScreenState extends State<TreatmentScreen> {
     );
   }
 
-  Widget _buildUrgencyCard(ScanResult scanResult) {
-    return GlassCard(
-      padding: const EdgeInsets.all(UIConstants.paddingMedium),
-      opacity: 0.65,
-      borderColor: const Color(AppColors.orangePrimary).withValues(alpha: 0.2),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(AppColors.orangePrimary).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
-            ),
-            child: const Icon(Icons.schedule, color: Color(AppColors.orangePrimary), size: UIConstants.iconXLarge),
-          ),
-          const SizedBox(width: UIConstants.paddingMedium),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Urgency',
-                  style: TextStyle(
-                    fontSize: UIConstants.fontSizeMedium,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  scanResult.urgency ?? 'Not specified',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+ Widget _buildRecommendationCard(ScanResult scanResult) {
+     return FutureBuilder<WeatherData?>(
+       future: WeatherService.getCurrentWeather(),
+       builder: (context, snapshot) {
+         final severity = scanResult.severity ?? 'low';
+         final disease = scanResult.diseaseName ?? 'healthy';
 
-  Widget _buildTreatmentCard(ScanResult scanResult) {
-    return GlassCard(
-      padding: const EdgeInsets.all(UIConstants.paddingMedium),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(AppColors.limeGreen).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
-                ),
-                child: const Icon(Icons.medical_services, color: Color(AppColors.forestGreen), size: UIConstants.iconMedium),
-              ),
-              const SizedBox(width: UIConstants.spacingMedium),
-              Text(
-                'Recommended Treatment',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(AppColors.forestGreen),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: UIConstants.paddingMedium),
-          Text(
-            scanResult.treatment ?? 'No treatment recommendation available',
-            style: const TextStyle(fontSize: UIConstants.fontSizeLarge, height: 1.5),
-          ),
-        ],
-      ),
-    );
-  }
+         String? weatherRisk;
+         final weather = snapshot.data;
+         if (weather != null) {
+           final risk = WeatherService.calculateDiseaseRisk(weather);
+           weatherRisk = risk.name;
+         }
 
-  Widget _buildRecommendationCard(ScanResult scanResult) {
-    final severity = scanResult.severity ?? 'low';
-    final disease = scanResult.diseaseName ?? 'healthy';
-    final recommendation = RecommendationEngine.getRecommendation(
-      disease: disease,
-      severity: severity,
-      crop: scanResult.notes?.replaceAll('Crop: ', ''),
-    );
+         final recommendation = RecommendationEngine.getRecommendation(
+           disease: disease,
+           severity: severity,
+           crop: scanResult.notes?.replaceAll('Crop: ', ''),
+           weatherRisk: weatherRisk,
+         );
 
-    return GlassCard(
-      padding: const EdgeInsets.all(UIConstants.paddingMedium),
-      opacity: 0.75,
-      borderColor: const Color(AppColors.limeGreen).withValues(alpha: 0.2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.lightbulb, color: Color(AppColors.forestGreen), size: UIConstants.iconMedium),
-              const SizedBox(width: UIConstants.spacingMedium),
-              Text(
-                'Smart Recommendations',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(AppColors.forestGreen),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: UIConstants.paddingMedium),
-          Text(
-            recommendation,
-            style: const TextStyle(fontSize: UIConstants.fontSizeMedium, height: 1.6),
-          ),
-        ],
-      ),
-    );
-  }
-
+         return GlassCard(
+           padding: const EdgeInsets.all(UIConstants.paddingMedium),
+           opacity: 0.75,
+           borderColor: const Color(AppColors.limeGreen).withValues(alpha: 0.2),
+           child: Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               Row(
+                 children: [
+                   const Icon(Icons.lightbulb, color: Color(AppColors.forestGreen), size: UIConstants.iconMedium),
+                   const SizedBox(width: UIConstants.spacingMedium),
+                   Text(
+                     'Recommended Treatment',
+                     style: TextStyle(
+                       fontSize: 16,
+                       fontWeight: FontWeight.w700,
+                       color: const Color(AppColors.forestGreen),
+                     ),
+                   ),
+                 ],
+               ),
+               const SizedBox(height: UIConstants.paddingMedium),
+               Text(
+                 recommendation,
+                 style: const TextStyle(fontSize: UIConstants.fontSizeMedium, height: 1.6),
+               ),
+             ],
+           ),
+         );
+       },
+     );
+   }
   Widget _buildReminderButton(ScanResult scanResult) {
     return ElevatedButton.icon(
       onPressed: () async {

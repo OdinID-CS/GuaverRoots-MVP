@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import '../models/weather_data.dart';
 
 part 'weather_data.g.dart';
 
