@@ -56,12 +56,21 @@ class RecommendationEngine {
       return 'Remove and destroy infected plants immediately. Do not compost affected material. Rotate crops and improve soil drainage.';
     }
     if (disease.contains('mosaic') || disease.contains('virus')) {
-      return 'No cure available. Remove and destroy infected plants immediately. Control aphid vectors with insecticidal soap or neem oil.';
+      return 'No cure available. Remove and destroy infected plants immediately. Control aphid vectors with insecticidal soap or neem oil. Use virus-free planting material.';
     }
-    if (disease.contains('rot')) {
+    if (disease.contains('mite') || disease.contains('green mite') || disease.contains('spider mite')) {
+      return 'Apply acaricide or insecticidal soap. Spray with neem oil solution. Remove heavily infested leaves. Maintain field hygiene and check plants regularly for early mite activity.';
+    }
+    if (disease.contains('anthracnose')) {
       return severity == 'high' || severity == 'severe'
-          ? 'Improve drainage immediately. Apply fungicide containing metalaxyl or copper. Remove rotted tissue.'
-          : 'Reduce watering and improve drainage. Apply copper-based fungicide around the base.';
+          ? 'Apply chlorothalonil or copper fungicide immediately. Remove and destroy infected plant material. Disinfect tools between plants.'
+          : 'Apply copper-based fungicide weekly. Remove infected plant parts. Avoid overhead irrigation.';
+    }
+    if (disease.contains('damping off') || disease.contains('damping')) {
+      return 'Improve drainage and reduce soil moisture. Apply copper-based fungicide to the soil surface. Use treated seeds. Avoid overcrowding seedlings.';
+    }
+    if (disease.contains("cock") || disease.contains("nematode") || disease.contains('cocks')) {
+      return 'Apply nematicide to the soil. Rotate with non-host crops. Remove and destroy heavily infected tubers. Improve soil drainage and organic matter.';
     }
     return 'Apply an appropriate fungicide or bactericide based on the specific diagnosis. Remove heavily infected parts and monitor daily.';
   }
@@ -89,6 +98,12 @@ class RecommendationEngine {
     }
     if (disease.contains('spot') || disease.contains('rot')) {
       return 'Prevention: Mulch to prevent soil splash. Sanitize tools. Rotate crops annually and avoid working in wet fields.';
+    }
+    if (disease.contains('mite') || disease.contains('green mite')) {
+      return 'Prevention: Inspect plants regularly for early mite signs. Maintain field hygiene. Introduce natural predators like ladybugs.';
+    }
+    if (disease.contains('mosaic') || disease.contains('virus') || disease.contains('whitefly')) {
+      return 'Prevention: Control whitefly and aphid vectors. Use virus-free planting material. Rotate with non-host crops. Use reflective mulches.';
     }
     return 'Prevention: Practice crop rotation, maintain field hygiene, and monitor plants regularly for early signs of disease.';
   }

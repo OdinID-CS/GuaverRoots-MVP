@@ -25,41 +25,20 @@ except ImportError:
 app = FastAPI(title="GuaverRoots API", version="1.0.0")
 
 # Model configuration
-MODEL_PATH = os.getenv("MODEL_PATH", "model.tflite")
+MODEL_PATH = os.getenv("MODEL_PATH", "crop_disease_model.tflite")
 if not os.path.exists(MODEL_PATH):
-    MODEL_PATH = os.path.join("models", "model.tflite")
+    MODEL_PATH = os.path.join("models", "crop_disease_model.tflite")
 
-# Class names (39 total)
+# Class names (34 total - Ghana vegetables)
 CLASS_NAMES = [
-    "Apple___Apple_scab",
-    "Apple___Black_rot",
-    "Apple___Cedar_apple_rust",
-    "Apple___healthy",
-    "Background_without_leaves",
-    "Blueberry___healthy",
-    "Cherry___Powdery_mildew",
-    "Cherry___healthy",
     "Corn___Cercospora_leaf_spot Gray_leaf_spot",
     "Corn___Common_rust",
     "Corn___Northern_Leaf_Blight",
     "Corn___healthy",
-    "Grape___Black_rot",
-    "Grape___Esca_(Black_Measles)",
-    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
-    "Grape___healthy",
-    "Orange___Haunglongbing_(Citrus_greening)",
-    "Peach___Bacterial_spot",
-    "Peach___healthy",
     "Pepper,_bell___Bacterial_spot",
     "Pepper,_bell___healthy",
-    "Potato___Early_blight",
-    "Potato___Late_blight",
-    "Potato___healthy",
-    "Raspberry___healthy",
     "Soybean___healthy",
     "Squash___Powdery_mildew",
-    "Strawberry___Leaf_scorch",
-    "Strawberry___healthy",
     "Tomato___Bacterial_spot",
     "Tomato___Early_blight",
     "Tomato___Late_blight",
@@ -69,6 +48,23 @@ CLASS_NAMES = [
     "Tomato___Target_Spot",
     "Tomato___Tomato_mosaic_virus",
     "Tomato___healthy",
+    "Cassava___Bacterial_blight",
+    "Cassava___Brown_streak",
+    "Cassava___Green_mite",
+    "Cassava___Mosaic",
+    "Cassava___healthy",
+    "Garden_Egg___Fusarium_wilt",
+    "Garden_Egg___Aphid_transmitted_virus",
+    "Garden_Egg___healthy",
+    "Okra___Yellow_vein_mosaic",
+    "Okra___Fusarium_wilt",
+    "Okra___Damping_off",
+    "Okra___healthy",
+    "Yam___Mosaic",
+    "Yam___Anthracnose",
+    "Yam___Cocks_crow",
+    "Yam___healthy",
+    "Background_without_leaves",
 ]
 
 # Global interpreter
@@ -156,6 +152,131 @@ MOCK_DISEASES = [
         "treatment": "No treatment needed. Continue regular monitoring. Maintain proper watering, fertilization, and pest control practices. Consider preventive measures during high-risk weather conditions.",
         "description": "No disease detected - plant appears healthy",
     },
+    # Corn diseases
+    {
+        "name": "Cercospora Leaf Spot / Gray Leaf Spot",
+        "confidence": 0.82,
+        "severity": "Moderate",
+        "urgency": "Treat within 3-5 days",
+        "treatment": "Apply fungicides containing fluoxastrobin or pyraclostrobin. Rotate crops with non-corn cereals. Remove and destroy infected crop residues. Avoid overhead irrigation.",
+        "description": "Rectangular gray-tan lesions with yellow halos on leaves",
+    },
+    {
+        "name": "Common Rust",
+        "confidence": 0.88,
+        "severity": "Moderate",
+        "urgency": "Treat within 3-5 days",
+        "treatment": "Apply fungicide containing propiconazole or triadimefon. Plant resistant varieties. Destroy infected residues after harvest. Avoid early planting in areas with high rust pressure.",
+        "description": "Small brown pustules scattered across leaves",
+    },
+    {
+        "name": "Northern Leaf Blight",
+        "confidence": 0.84,
+        "severity": "High",
+        "urgency": "Treat within 2-3 days",
+        "treatment": "Apply fungicides containing mancozeb or chlorothalonil. Rotate with non-host crops. Plant resistant hybrids. Remove and destroy infected plants.",
+        "description": "Large grayish tan lesions with dark borders on leaves",
+    },
+    # Cassava diseases
+    {
+        "name": "Cassava Bacterial Blight",
+        "confidence": 0.79,
+        "severity": "High",
+        "urgency": "Treat immediately",
+        "treatment": "Remove and destroy infected plants immediately. Apply copper-based bactericide. Use clean planting material. Disinfect pruning tools between plants.",
+        "description": "Water-soaked lesions that turn dark brown on leaves and stems",
+    },
+    {
+        "name": "Cassava Brown Streak Disease",
+        "confidence": 0.72,
+        "severity": "High",
+        "urgency": "Treat immediately",
+        "treatment": "Remove and destroy infected plants. Use virus-free planting material. Control whitefly vectors with insecticidal soap. Plant disease-resistant varieties.",
+        "description": "Brown necrotic streaks on stems, yellowing of leaves",
+    },
+    {
+        "name": "Cassava Green Mite",
+        "confidence": 0.76,
+        "severity": "Moderate",
+        "urgency": "Treat within 3-5 days",
+        "treatment": "Apply acaricide or insecticidal soap to control mites. Spray with neem oil. Remove heavily infested leaves. Maintain field hygiene.",
+        "description": "Mottleing and stippling of leaves caused by mites",
+    },
+    {
+        "name": "Cassava Mosaic Disease",
+        "confidence": 0.83,
+        "severity": "High",
+        "urgency": "Treat immediately",
+        "treatment": "Remove and destroy infected plants entirely. Control whitefly vectors. Use certified virus-free planting material. Rotate with non-host crops.",
+        "description": "Mosaic pattern of light and dark green on leaves, leaf curling",
+    },
+    # Garden Egg diseases
+    {
+        "name": "Garden Egg Fusarium Wilt",
+        "confidence": 0.71,
+        "severity": "High",
+        "urgency": "Treat immediately",
+        "treatment": "Remove and destroy infected plants. Solarize soil before replanting. Use resistant varieties. Improve soil drainage. Avoid planting in the same spot for 3-4 years.",
+        "description": "Yellowing and wilting of leaves starting from the base",
+    },
+    {
+        "name": "Garden Egg Aphid Transmission",
+        "confidence": 0.69,
+        "severity": "Moderate",
+        "urgency": "Treat within 3-5 days",
+        "treatment": "Control aphid populations with insecticidal soap or neem oil. Remove severely infected plants. Use reflective mulches to deter aphids.",
+        "description": "Virus transmission by aphids causing leaf curling and stunting",
+    },
+    # Okra diseases
+    {
+        "name": "Okra Yellow Vein Mosaic",
+        "confidence": 0.80,
+        "severity": "High",
+        "urgency": "Treat immediately",
+        "treatment": "Remove and destroy infected plants. Control whitefly vectors with insecticidal soap. Use resistant varieties. Plant trap crops to attract vectors away.",
+        "description": "Yellowing of veins on leaves, leaf curling, stunted growth",
+    },
+    {
+        "name": "Okra Fusarium Wilt",
+        "confidence": 0.73,
+        "severity": "High",
+        "urgency": "Treat immediately",
+        "treatment": "Remove infected plants immediately. Solarize soil. Use resistant varieties. Rotate with non-host crops. Ensure proper drainage.",
+        "description": "Wilting and yellowing of leaves from the base upward",
+    },
+    {
+        "name": "Okra Damping Off",
+        "confidence": 0.66,
+        "severity": "Moderate",
+        "urgency": "Treat within 3-5 days",
+        "treatment": "Improve drainage and reduce soil moisture. Apply copper-based fungicide to soil. Use treated seeds. Avoid overcrowding seedlings.",
+        "description": "Seedlings collapse at the soil line, damping off before emergence",
+    },
+    # Yam diseases
+    {
+        "name": "Yam Mosaic Virus",
+        "confidence": 0.77,
+        "severity": "High",
+        "urgency": "Treat immediately",
+        "treatment": "Remove and destroy infected plants. Use virus-free planting material. Control aphid vectors. Rotate with non-host crops.",
+        "description": "Mosaic pattern of light and dark green on leaves, leaf distortion",
+    },
+    {
+        "name": "Yam Anthracnose",
+        "confidence": 0.75,
+        "severity": "High",
+        "urgency": "Treat immediately",
+        "treatment": "Apply chlorothalonil or copper fungicide. Remove and destroy infected plant material. Use resistant varieties. Avoid overhead irrigation.",
+        "description": "Dark sunken lesions on tubers and stems",
+    },
+    {
+        "name": "Yam Cocks Crow Nematode",
+        "confidence": 0.63,
+        "severity": "Moderate",
+        "urgency": "Treat within 5-7 days",
+        "treatment": "Apply nematicide to soil. Rotate with non-host crops. Remove and destroy heavily infected tubers. Improve soil drainage.",
+        "description": "Dark spots on tubers, reduced yield, cracking of tuber surface",
+    },
 ]
 
 
@@ -211,33 +332,32 @@ def preprocess_image(image_bytes):
 def parse_class_name(raw_class_name):
     """
     Parse raw class name (format: Crop___DiseaseName) into clean components.
-    
+
     Returns:
-        crop: Crop type (e.g., "Tomato")
-        disease_name: Disease name (e.g., "Early Blight")
+        crop: Crop type (e.g., "Cassava")
+        disease_name: Disease name (e.g., "Mosaic")
         is_healthy: Whether the plant is healthy
     """
     if raw_class_name == "Background_without_leaves":
         return "Unknown", "Background", False
-    
+
     parts = raw_class_name.split("___")
     if len(parts) < 2:
         return "Unknown", raw_class_name, False
-    
+
     crop = parts[0]
     disease_raw = parts[1]
-    
+
     # Check if healthy
     is_healthy = disease_raw.lower() == "healthy"
-    
+
     # Clean up disease name (replace underscores with spaces)
     disease_name = disease_raw.replace("_", " ")
-    
-    # Handle special cases
-    if "Pepper,_bell" in crop:
-        crop = "Pepper (bell)"
-    
-    return crop, disease_name, is_healthy
+
+    # Handle special cases for crop name display
+    crop_display = crop.replace("_", " ")
+
+    return crop_display, disease_name, is_healthy
 
 
 def infer_severity(confidence, is_healthy):
