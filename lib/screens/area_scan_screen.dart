@@ -33,9 +33,6 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
       await PermissionService.requestCamera();
       final XFile? image = await _picker.pickImage(source: ImageSource.camera);
       if (image != null && _capturedImages.length < _maxAreaPhotos) {
-        setState(() {
-          _capturedImages.add(image.path);
-        });
         AppLogger.camera('Photo captured for area scan', success: true, details: image.path);
         final compressedPath = await ImageCompressor.compressImage(image.path);
         setState(() {
@@ -59,9 +56,6 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
       await PermissionService.requestStorage();
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image != null && _capturedImages.length < _maxAreaPhotos) {
-        setState(() {
-          _capturedImages.add(image.path);
-        });
         AppLogger.camera('Image selected from gallery for area scan', success: true, details: image.path);
         final compressedPath = await ImageCompressor.compressImage(image.path);
         setState(() {
@@ -92,15 +86,18 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
       if (permission == LocationPermission.denied) {
         await Geolocator.requestPermission();
       }
-      
+
       if (permission == LocationPermission.deniedForever) {
         return null;
       }
 
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
+      ).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw Exception("Location fetch timed out"),
       );
-      
+
       return '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
     } catch (e) {
       AppLogger.warning('Unable to get current location', tag: 'AreaScanScreen', error: e.toString());
@@ -119,6 +116,7 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
       final apiService = Provider.of<ApiService>(context, listen: false);
 
       final List<HeatmapPoint> combinedPoints = [];
+      final List<Map<String, dynamic>> perImageResults = [];
       int totalPoints = 0;
       int diseasedCount = 0;
       final List<String> diseases = [];
@@ -127,13 +125,21 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
 
       for (final imagePath in _capturedImages) {
         try {
-          final result = await apiService.analyzeAreaScan(imagePath, location: location);
+          final result = await apiService.analyzeAreaScan(imagePath, location: location)
+              .timeout(const Duration(seconds: 60));
           if (result != null) {
             if (result.heatmapPoints != null) {
               combinedPoints.addAll(
                 result.heatmapPoints!.map((p) => HeatmapPoint.fromJson(p)),
               );
             }
+            perImageResults.add({
+              'imagePath': imagePath,
+              'heatmapPoints': result.heatmapPoints ?? [],
+              'diseaseName': result.diseaseName,
+              'confidence': result.confidence,
+              'severity': result.severity,
+            });
             totalPoints += result.totalSections ?? 0;
             diseasedCount += result.diseasedSections ?? 0;
             if (result.diseaseName != null && result.diseaseName != 'Healthy') {
@@ -160,6 +166,7 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
         timestamp: DateTime.now(),
         isAreaScan: true,
         areaScanImages: List.from(_capturedImages),
+        areaScanResults: perImageResults,
         heatmapPoints: combinedPoints.map((p) => p.toJson()).toList(),
         diseaseName: mostLikelyDisease,
         confidence: avgConfidence,
@@ -173,7 +180,7 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
       );
 
       await StorageService.saveScanResult(finalResult);
-      
+
       if (mounted) {
         Navigator.push(
           context,
@@ -348,11 +355,11 @@ class _AreaScanScreenState extends State<AreaScanScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, -5),
-                        ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
+                      ),
                     ],
                   ),
                   child: Column(

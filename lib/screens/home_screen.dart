@@ -275,12 +275,14 @@ class HomeScreen extends StatelessWidget {
           label: 'Scan Crop',
           subtitle: 'Take a photo for analysis',
           color: const Color(AppColors.forestGreen),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ScanScreen()),
-            );
-          },
+         onTap: () {
+           Navigator.push(
+             context,
+             MaterialPageRoute(
+               builder: (context) => AreaScanScreen(),
+             ),
+           );
+         },
         ),
         const SizedBox(height: UIConstants.paddingMedium),
         _buildBigButton(
@@ -292,7 +294,7 @@ class HomeScreen extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const AreaScanScreen()),
+              MaterialPageRoute(builder: (context) => AreaScanScreen()),
             );
           },
         ),

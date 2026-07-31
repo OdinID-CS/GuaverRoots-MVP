@@ -51,9 +51,9 @@ class DevicePerformance {
     try {
       final cores = Platform.numberOfProcessors;
       if (Platform.isAndroid || Platform.isIOS) {
-        if (cores <= 4) {
+        if (cores <= 6) {
           return PerformanceMode.low;
-        } else if (cores <= 6) {
+        } else if (cores <= 8) {
           return PerformanceMode.medium;
         }
       }

@@ -36,14 +36,17 @@ class ScanResultAdapter extends TypeAdapter<ScanResult> {
       totalSections: fields[16] as int?,
       healthySections: fields[17] as int?,
       diseasedSections: fields[18] as int?,
-      location: fields[19] as String?,
+      heatmapPoints: (fields[19] as List?)
+          ?.map((dynamic e) => (e as Map).cast<String, dynamic>())
+          ?.toList(),
+      location: fields[20] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ScanResult obj) {
     writer
-      ..writeByte(19)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -83,6 +86,8 @@ class ScanResultAdapter extends TypeAdapter<ScanResult> {
       ..writeByte(18)
       ..write(obj.diseasedSections)
       ..writeByte(19)
+      ..write(obj.heatmapPoints)
+      ..writeByte(20)
       ..write(obj.location);
   }
 

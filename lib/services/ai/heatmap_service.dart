@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'tiling_service.dart';
 
 class HeatmapService {
-  static Color getColorForScore(double score) {
-    if (score <= 0.0) return Colors.blue; // Healthy
-    if (score <= 0.25) return Colors.green; // Low
-    if (score <= 0.5) return Colors.yellow; // Moderate
-    if (score <= 0.75) return Colors.orange; // High
-    return Colors.red; // Severe
-  }
+ static Color getColorForScore(double score) {
+   final t = score.clamp(0.0, 1.0);
+   final alpha = (t * 255).round();
+   return Color.fromARGB(alpha, 211, 47, 47); // red, transparent when healthy, solid when severe
+ }
 
   /// Interpolates the points to find the color at any given (x, y) coordinate
   /// Using Inverse Distance Weighting (IDW) for smooth blending

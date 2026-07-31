@@ -17,14 +17,57 @@ class HeatmapScreen extends StatefulWidget {
 
 class _HeatmapScreenState extends State<HeatmapScreen> {
   double _overlayOpacity = 0.5;
-  late List<HeatmapPoint> _points;
+  late final List<_ImagePageData> _pages;
+  late final PageController _pageController;
+  int _currentPage = 0;
 
   @override
   void initState() {
     super.initState();
-    _points = (widget.scanResult.heatmapPoints ?? [])
+    _pages = _buildPages();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  List<_ImagePageData> _buildPages() {
+    final perImage = widget.scanResult.areaScanResults;
+
+    // Area scan with per-image results: one page per photo, each with its own heatmap
+    if (widget.scanResult.isAreaScan && perImage != null && perImage.isNotEmpty) {
+      return perImage.map((entry) {
+        final map = entry as Map;
+        final rawPoints = (map['heatmapPoints'] as List?) ?? [];
+        final points = rawPoints
+            .map((p) => HeatmapPoint.fromJson(Map<String, dynamic>.from(p as Map)))
+            .toList();
+        return _ImagePageData(
+          imagePath: map['imagePath'] as String,
+          points: points,
+          diseaseName: map['diseaseName'] as String?,
+          confidence: (map['confidence'] as num?)?.toDouble(),
+          severity: map['severity'] as String?,
+        );
+      }).toList();
+    }
+
+    // Fallback: single scan, or area scan without per-image data (older saved scans)
+    final points = (widget.scanResult.heatmapPoints ?? [])
         .map((p) => HeatmapPoint.fromJson(p))
         .toList();
+    return [
+      _ImagePageData(
+        imagePath: widget.scanResult.imagePath,
+        points: points,
+        diseaseName: widget.scanResult.diseaseName,
+        confidence: widget.scanResult.confidence,
+        severity: widget.scanResult.severity,
+      ),
+    ];
   }
 
   @override
@@ -47,24 +90,78 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
             Expanded(
               child: Stack(
                 children: [
-                  Center(
-                    child: Image.file(
-                      File(widget.scanResult.imagePath),
-                      fit: BoxFit.contain,
-                    ),
+                  PageView.builder(
+                    controller: _pageController,
+                    itemCount: _pages.length,
+                    onPageChanged: (index) => setState(() => _currentPage = index),
+                    itemBuilder: (context, index) {
+                      final page = _pages[index];
+                      return Stack(
+                        children: [
+                          Center(
+                            child: Image.file(
+                              File(page.imagePath),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          Center(
+                            child: AspectRatio(
+                              aspectRatio: 1.0,
+                              child: Opacity(
+                                opacity: _overlayOpacity,
+                                child: CustomPaint(
+                                  painter: HeatmapPainter(points: page.points),
+                                  size: Size.infinite,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                  Center(
-                    child: AspectRatio(
-                      aspectRatio: 1.0,
-                      child: Opacity(
-                        opacity: _overlayOpacity,
-                        child: CustomPaint(
-                          painter: HeatmapPainter(points: _points),
-                          size: Size.infinite,
+                  if (_pages.length > 1)
+                    Positioned(
+                      top: 12,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Image ${_currentPage + 1} of ${_pages.length}',
+                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  if (_pages.length > 1)
+                    Positioned(
+                      bottom: 8,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_pages.length, (i) {
+                          final active = i == _currentPage;
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: active ? 10 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? const Color(AppColors.limeGreen)
+                                  : Colors.white.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -137,7 +234,10 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Area Health Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(AppColors.forestGreen))),
+          Text(
+            _pages.length > 1 ? 'Overall Area Health Summary' : 'Area Health Summary',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(AppColors.forestGreen)),
+          ),
           const SizedBox(height: UIConstants.spacingLarge),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -154,9 +254,16 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            widget.scanResult.recommendation ?? '',
+            widget.scanResult.overallSummary ?? widget.scanResult.recommendation ?? '',
             style: TextStyle(color: Colors.grey[700]),
           ),
+          if (widget.scanResult.recommendation != null && widget.scanResult.overallSummary != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              widget.scanResult.recommendation!,
+              style: TextStyle(color: Colors.grey[700]),
+            ),
+          ],
         ],
       ),
     );
@@ -172,6 +279,22 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
   }
 }
 
+class _ImagePageData {
+  final String imagePath;
+  final List<HeatmapPoint> points;
+  final String? diseaseName;
+  final double? confidence;
+  final String? severity;
+
+  _ImagePageData({
+    required this.imagePath,
+    required this.points,
+    this.diseaseName,
+    this.confidence,
+    this.severity,
+  });
+}
+
 class HeatmapPainter extends CustomPainter {
   final List<HeatmapPoint> points;
 
@@ -180,7 +303,7 @@ class HeatmapPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
-    
+
     const int resolution = 40;
     final dx = size.width / resolution;
     final dy = size.height / resolution;
@@ -195,8 +318,8 @@ class HeatmapPainter extends CustomPainter {
 
         final color = HeatmapService.getBlendedColor(normalizedX, normalizedY, points);
 
-        if (color != Colors.transparent) {
-          paint.color = color.withValues(alpha: 0.6);
+        if (color.a > 0) {
+          paint.color = color;
           canvas.drawRect(Rect.fromLTWH(i * dx, j * dy, dx, dy), paint);
         }
       }
@@ -204,5 +327,7 @@ class HeatmapPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant HeatmapPainter oldDelegate) {
+    return oldDelegate.points != points;
+  }
 }

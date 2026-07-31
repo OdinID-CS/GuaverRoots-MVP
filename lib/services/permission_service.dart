@@ -12,7 +12,7 @@ class PermissionService {
       final status = await Permission.camera.request();
       final granted = status.isGranted;
       AppLogger.permission('Camera', granted);
-      
+
       if (!granted) {
         if (status.isPermanentlyDenied) {
           throw PermissionException(
@@ -27,7 +27,7 @@ class PermissionService {
           code: 'DENIED',
         );
       }
-      
+
       return true;
     } catch (e) {
       if (e is PermissionException) rethrow;
@@ -39,14 +39,16 @@ class PermissionService {
   /// Request storage permission (for Android)
   static Future<bool> requestStorage() async {
     try {
-      // For Android 13+, use photos permission
-      // For older versions, use storage permission
-      final status = await Permission.photos.request();
-      final granted = status.isGranted;
+      // Request both — one is a no-op depending on Android version,
+      // but this guarantees the correct one is actually asked for.
+      final photosStatus = await Permission.photos.request();
+      final storageStatus = await Permission.storage.request();
+
+      final granted = photosStatus.isGranted || storageStatus.isGranted;
       AppLogger.permission('Storage/Photos', granted);
-      
+
       if (!granted) {
-        if (status.isPermanentlyDenied) {
+        if (photosStatus.isPermanentlyDenied || storageStatus.isPermanentlyDenied) {
           throw PermissionException(
             'Storage',
             'Storage permission is permanently denied. Please enable it in app settings.',
@@ -59,7 +61,7 @@ class PermissionService {
           code: 'DENIED',
         );
       }
-      
+
       return true;
     } catch (e) {
       if (e is PermissionException) rethrow;
@@ -73,7 +75,7 @@ class PermissionService {
     try {
       final cameraGranted = await requestCamera();
       final storageGranted = await requestStorage();
-      
+
       return cameraGranted && storageGranted;
     } catch (e) {
       AppLogger.error('Failed to request all permissions', error: e, tag: 'PermissionService');
@@ -95,8 +97,9 @@ class PermissionService {
   /// Check if storage permission is granted
   static Future<bool> isStorageGranted() async {
     try {
-      final status = await Permission.photos.status;
-      return status.isGranted;
+      final photosStatus = await Permission.photos.status;
+      final storageStatus = await Permission.storage.status;
+      return photosStatus.isGranted || storageStatus.isGranted;
     } catch (e) {
       AppLogger.error('Failed to check storage permission status', error: e, tag: 'PermissionService');
       return false;
